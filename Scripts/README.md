@@ -40,7 +40,7 @@ Your input should be a haplotype file of the following form:
   </tr>
  </table>
  
- Each row is chromosome from subject sid; note that each has two chromosomes with the same id.  Alternate alleles of SNP rsid_Alt are indicated with a 1 and reference alleles with a 0.  Transpose the file with one of the following commands.  Note that the sid row is purposely excluded.
+ Each row is chromosome from subject sid; note that each has two chromosomes with the same id.  Alternate alleles of SNP </kbd>rsid_Alt</kbd> are indicated with a 1 and reference alleles with a 0.  Transpose the file with one of the following commands.  Note that the sid row is purposely excluded.
  
  <pre>
  <code>
@@ -51,6 +51,41 @@ Your input should be a haplotype file of the following form:
  done > transpose_file
  </code>
  </pre>
+ 
+ <pre>
+ <code>
+ awk 'BEGIN{OFS="\t"}; {for(j=2;j<=NF;j++) {a[NR,j]=$j; n_rows=NR; n_cols=(n_cols<NF?NF:n_cols)} } END{for (j=2;j<=n_cols;j++) {for (i=1;i<=n_rows;i++) {printf "%s%s",a[i,j],(i==n_rows?"\n":"\t")} } }' file > transpose file
+ </code>
+ </pre>
+ 
+ The output will be something like:
+ 
+ <table>
+  <tr>
+    <th>rs0000001_A</th>
+    <td>0</td>
+    <td>0</td>
+    <td>1</td>
+    <td>1</td>
+    <td>...</td>
+  </tr>
+  <tr>
+    <th>rs0000002_G</th>
+    <td>0</td>
+    <td>1</td>
+    <td>0</td>
+    <td>0</td>
+    <td>...</td>
+  </tr>
+  <tr>
+    <th>rs0000003_C</th>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+    <td>...</td>
+  </tr>
+ </table>
  
     
     
