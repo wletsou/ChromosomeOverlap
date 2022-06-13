@@ -2,6 +2,8 @@
 
 # loops through all SIGMA-tuples of chromosomes in the columns of HAPLOTYPES_FILE and look for SNPs that are the same across the group.  Output the unique patterns and their counts for each group type.  Relies on subject_overlap.sh to do overlaps and comparisons
 
+# /home/wletsou/scripts/ChromosomeOverlap_initiation_sub.sh haplotype_estimates_transpose.ukbb_bca_cases.chr11.69231642-69431642.1-100.txt 1 chr11.69231642-69431642 "" /scratch_space/wletsou/sjlife/GWAS/ChromosomeOverlapTest /home/wletsou/scripts
+
 HAPLOTYPES_FILE=$1 # transposed haplotypes file of snps x chromosomes
 SIGMA=$2 # (One fewer than) the number of chromosomes to overlap
 OUTPUT=$3 # Base file name for output Pattern.${OUTPUT}_*.txt

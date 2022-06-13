@@ -9,7 +9,7 @@ printf "\n"
 if [ ! -z $TRANSPOSE ];
 then
   n_fields=$(awk 'END{print NF}' $HAPLOTYPES_FILE)
-  for i in `seq 1 $n_fields`
+  for i in `seq 2 $n_fields`
   do
     cut -f$i $HAPLOTYPES_FILE | paste -s # paste column as a row
   done > subjects_${file_ID}_${INDEX}.txt
@@ -419,7 +419,7 @@ do
       test -f $file && echo mv $file ${file%.*}.txt
       test -f $file && mv $file ${file%.*}.txt && printf "\n"
     done
-  else 
+  else
     echo Write unique snps in ${file//snps/snps_unique}
     cp $file ${file//snps/snps_unique}
     printf "\n"

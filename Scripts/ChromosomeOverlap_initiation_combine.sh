@@ -2,23 +2,12 @@
 
 # Combine files of the same overlap type and total the number of unique patterns
 
+# /home/wletsou/scripts/ChromosomeOverlap_initiation_combine.sh chr11.69231642-69431642 1 "Iteration000" "" /scratch_space/wletsou/sjlife/GWAS/ChromosomeOverlapTest
+
 POPULATION=$1 # single population name whose tuples are to be combined
 COMBINE_GROUPS=$2 # whether to merge files with the same number of bar groups, e.g., 2,3+j 2,j+3 and 2+3,j form a two-group pattern
 NAME=$3 # Default iteration name, Iteration000
 DIRECTORY=$4
-HOME_DIR=$5
-
-# get number of bar groups by one plus the number of bars
-n_bars=$(echo $PATTERN | tr -cd "|" | wc -c)
-let n_groups=$n_bars+1
-
-#Base pair range as a two-element array
-BP_RANGE=($(echo $BP_RANGE | perl -pne 's/([0-9]+)[,]*/$1 /g'))
-
-if [ -z $HOME_DIR ];
-then
-  HOME_DIR=$(echo "/home/wletsou/scripts")
-fi
 
 if [ -z $DIRECTORY ];
 then
@@ -81,8 +70,9 @@ fi
 
 # find reference pattern, i.e., comma-separated sorted list of pattern with smallest index at each position
 unset ref_pattern
-unset pattern_array
-echo Pattern.${POPULATION}*.txt
+unset
+echo Files:
+ls Pattern.${POPULATION}*.txt
 printf "\n"
 for file in ${DIRECTORY}/Pattern.${POPULATION}*.txt
 do
