@@ -97,9 +97,9 @@
   
   <pre>
   <code>
-  index2combo2.R I=0 n=100 sigma=1
+  Rscript index2combo2.R I=0 n=100 sigma=1
   </code>
-  <pre> 
+  </pre> 
   
   finds the tuple of <var>&sigma-1=1</var> fixed chromosomes corresponding to the linear index 0 (i.e., the 0<sup>th</sup> tuple) when there are <var>n=100</var> total chromosomes.  This is a trivial computation when <var>&sigma-1=1</var>, but the program easily extends to larger values of <kbd>&sigma;</kbd></p>
   
