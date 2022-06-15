@@ -1,10 +1,10 @@
 <h1>Instructions</h1>
 
-This document outlines how to perform Chromosome Overlap on a single machine in a bash shell.  Users may parallelize computations on an HPC environment by selecting a range of steps to perform in each <kbd>_sub</kbd> operation.
+This document outlines how to perform Chromosome Overlap on a single machine in a bash shell.  Users may parallelize computations on an HPC environment by selecting a range of steps to perform in each <kbd>_sub</kbd> operation.  The goal is to obtain a list of closed haplotype patterns from (filtered meta-)chromosomes from a population.
 
 <h2>Initiation</h2>
 
-<p>Your input should be a haplotype file of the following form:</p>
+<p>Your input should be a haplotype file (<kbd>.txt</kbd>) of the following form:</p>
 
 <table>
   <tr>
@@ -142,7 +142,7 @@ sh ChromosomeOverlap_initiation_combine.sh NAME 1 "Iteration000"
 
 <p>NAME is the name variable you used in the previous step to name your output file.  We will not need to deal with the second input, but it should be left as "1."  The name Iteration000 will be appended to the combined file so that we know these meta-chromosomes have come from the initial round.  This program workds by finding the "minimum" label by computing the "distance" between each number (e.g., the 2 in <kbd>2,j</kbd> and the 50 in <kbd>50,j</kbd>) and its position in the string (1 for both); clearly this favors suffixes with small numbers in the leftmost positions.  The combined file <kbd>Pattern_combined.Iteration000.NAME.2,j.txt</kbd> is appended with the minimum index over all Pattern files which have been combined.  The files used to make the combined file will be moved to a folder <kbd>Iteration000</kbd> in case you need them later.</p>
 
-<p>A note is needed on the other files you may see.  For any combination of <var>&sigma;</var> chromosomes <var>i<sub>1</sub>,...,i<sub>&sigma;-1</sub></var> there will be several different paritions of the chromosomes into non-empty subsets.  The number of paritions of <var>&sigma;</var> things into <var>k</var> non-empty subsets is given by the <i>Stirling number</i> <var>S<sub>&sigma;,k</sub></var> (see the function <kbd>StirlingSum.sh</kbd>).  Chromosome Overlap currently only considers the single partition into one subset.  But for two chromosomes it is also possible to divide the combination into two subsets of one chromosome each; the alleles that are exclusive to each are output as a <i>split pattern</i> in the file appended <kbd>2+j</kbd>; you'll notice that these patterns are complementary.  You may notice some intermediate files with names like <kbd>2,j_2,j_2,j</kbd> or <kbd>2,j_2+j_j</kbd>, which indicate (i) the fixed/variable chromosomes being considered (i.e., <var>2</var> and <var>j</var>), (ii) the partition being evaluated (<var>2,j</var> for one subset or <var>2+j</var> for two subsets), and (iii) the meta-chromosomes exclusive to that subset (e.g., the alleles shared by 2 and <var>j</var> or by <var>j</var> alone.  Larger values of <var>&sigma;</var> can be used, but they will produce more subsets. The second input in <kbd>ChromosomeOverlap_initiation_combine.sh</kbd> indicates whether (1) or not (0) partitions into the same number of subsets should be combined into one output file.</p>  
+<p>A note is needed on the other files you may see.  For any combination of <var>&sigma;</var> chromosomes <var>i<sub>1</sub>,...,i<sub>&sigma;-1</sub></var> there will be several different paritions of the chromosomes into non-empty subsets.  The number of paritions of <var>&sigma;</var> things into <var>k</var> non-empty subsets is given by the <i>Stirling number</i> <var>S<sub>&sigma;,k</sub></var> (see the function <kbd>StirlingSum.sh</kbd>).  Chromosome Overlap currently only considers the single partition into one subset.  But for two chromosomes it is also possible to divide the combination into two subsets of one chromosome each; the alleles that are exclusive to each chromosome are output as a <i>split pattern</i> in the file appended <kbd>2+j</kbd>; you'll notice that these patterns are complementary.  You may notice some intermediate files with names like <kbd>2,j_2,j_2,j</kbd> or <kbd>2,j_2+j_j</kbd>, which indicate (i) the fixed/variable chromosomes being considered (i.e., <var>2</var> and <var>j</var>), (ii) the partition being evaluated (<var>2,j</var> for one subset or <var>2+j</var> for two subsets), and (iii) the meta-chromosomes exclusive to that subset (e.g., the alleles shared by 2 and <var>j</var> or by <var>j</var> alone.  Larger values of <var>&sigma;</var> can be used, but they will produce more subsets. The second input in <kbd>ChromosomeOverlap_initiation_combine.sh</kbd> indicates whether (1) or not (0) partitions into the same number of subsets should be combined into one output file.</p>  
  
  <h2>Filtering</h2>
  
@@ -154,7 +154,7 @@ sh ChromosomeOverlap_initiation_combine.sh NAME 1 "Iteration000"
  </code>
  </pre>
  
- <p>creates a file called <kbd>haplotype_segregation.NAME.patterns_0000-XXXX.txt</kbd> with the meta-chromosome in the first column, the number <var>a</var> of case chromosomes with the pattern, the number <var>b</var> of case chromosomes without the pattern, the number <var>c</var> of controls chromosomes with the pattern, and the number <var>d</var> of controls chromosomes without the pattern.</p>. The skipped inputs are for (i) specifying a range of haplotypes to evaluate, so that the work can be split up across different cores, and (ii) selecting only patterns that appeared at a certain iteration (see below).
+ <p>creates a file called <kbd>haplotype_segregation.NAME.patterns_0000-XXXX.txt</kbd> with the meta-chromosome in the first column, the number <var>a</var> of case chromosomes with the pattern, the number <var>b</var> of case chromosomes without the pattern, the number <var>c</var> of controls chromosomes with the pattern, and the number <var>d</var> of controls chromosomes without the pattern.  The skipped inputs are for (i) specifying a range of haplotypes to evaluate, so that the work can be split up across different cores, and (ii) selecting only patterns that appeared at a certain iteration (see below).</p>
  
  <p>The data in this file are sufficient to run Fisher's exact test in R:</p>
  
@@ -164,7 +164,7 @@ sh ChromosomeOverlap_initiation_combine.sh NAME 1 "Iteration000"
  </code>
  </pre>
  
- <p>creates a file <kbd>fisher_exact.NAME.txt</kbd> in your directory with pattern name, cases frequency, controls frequency, odds ratio, and p-value.</p>
+ <p>creates a file <kbd>fisher_exact.NAME.txt</kbd> in your directory with pattern name, cases frequency, controls frequency, odds ratio, and p-value for all XXXX+1 patterns.</p>
  
  <p>It is then a simple matter to filter patterns in <kbd>Pattern_combined.Iteration000.NAME.2,j.txt</kbd> for use in the overlap iterations.  A good strategy is to rename the <kbd>Pattern_combined.Iteration000.NAME.2,j.txt</kbd> to <kbd>Pattern_combined_<b>old</b>.Iteration000.NAME.2,j.txt</kbd> with</p>
  
@@ -182,4 +182,6 @@ sh ChromosomeOverlap_initiation_combine.sh NAME 1 "Iteration000"
  </code>
  </pre>
  
- to create a shorter list of patterns for the iterations, each with <var>p < 0.05</p>.  It is recommended that you start with fewer than 100 patterns (and sometimes even less), or else the overlaps will quickly blow up (i.e., generate more than a few hundred thousand unique patterns that each have to be overlapped with every other).  As long as you have the original list <kbd>Pattern_combined_<b>old</b>.Iteration000.NAME.2,j.txt</kbd> of patterns, you can experiment with different filtering thresholds.
+ <p>to create a shorter list of patterns for the iterations, each with <var>p < 0.05</var>.  It is recommended that you start with fewer than 100 patterns (and sometimes even less), or else the overlaps will quickly blow up (i.e., generate more than a few hundred thousand unique patterns that each have to be overlapped with every other).  As long as you have the original list <kbd>Pattern_combined_old.Iteration000.NAME.2,j.txt</kbd> of patterns, you can experiment with different filtering thresholds.</p>
+ 
+ <h2>Iteration</h2>
