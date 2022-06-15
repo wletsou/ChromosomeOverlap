@@ -178,7 +178,7 @@ sh ChromosomeOverlap_initiation_combine.sh NAME 1 "Iteration000"
  
  <pre>
  <code>
- awk '($5<0.05){hap[$1]; next} ($1 in hap){print $0} fisher_exact.NAME.txt Pattern_combined_old.Iteration000.NAME.2,j.txt > Pattern_combined.Iteration000.NAME.2,j.txt
+ awk &sbquo;(NR==FNR && $5<0.05){hap[$1]; next} ($1 in hap){print $0}&sbquo; fisher_exact.NAME.txt Pattern_combined_old.Iteration000.NAME.2,j.txt > Pattern_combined.Iteration000.NAME.2,j.txt
  </code>
  </pre>
  
