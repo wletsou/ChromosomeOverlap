@@ -89,7 +89,7 @@ This document outlines how to perform Chromosome Overlap on a single machine in 
   
   <pre>
   <code>
-  sh ChromosomeOverlap_initiation_sub.sh transpose_file 1 "NAME" ""
+  sh HOME_DIR/ChromosomeOverlap_initiation_sub.sh transpose_file 1 "NAME" "" "DIRECTORY" "HOME_DIR"
   </code>
   </pre>
   
@@ -178,10 +178,35 @@ sh ChromosomeOverlap_initiation_combine.sh NAME 1 "Iteration000"
  
  <pre>
  <code>
- awk &sbquo;(NR==FNR && $5<0.05){hap[$1]; next} ($1 in hap){print $0}&sbquo; fisher_exact.NAME.txt Pattern_combined_old.Iteration000.NAME.2,j.txt > Pattern_combined.Iteration000.NAME.2,j.txt
+ awk &lsquo;(NR==FNR && $5<0.05){hap[$1]; next} ($1 in hap){print $0}&rsquo; fisher_exact.NAME.txt Pattern_combined_old.Iteration000.NAME.2,j.txt > Pattern_combined.Iteration000.NAME.2,j.txt
  </code>
  </pre>
  
  <p>to create a shorter list of patterns for the iterations, each with <var>p < 0.05</var>.  It is recommended that you start with fewer than 100 patterns (and sometimes even less), or else the overlaps will quickly blow up (i.e., generate more than a few hundred thousand unique patterns that each have to be overlapped with every other).  As long as you have the original list <kbd>Pattern_combined_old.Iteration000.NAME.2,j.txt</kbd> of patterns, you can experiment with different filtering thresholds.</p>
  
  <h2>Iteration</h2>
+
+<p>Once you have the list of filtered patterns, it's time to iterate.  The idea is to iteratively form all combinations that yeild a non-null overlap.  This could in theory be accomplished by looping through all <var>2<sup>XXXX+1</sup></var> patterns, but you would be waiting for a long time.  Instead we form all pairs of patterns at the beginning of Iteration001 and look for unique patterns.  Then we form all pairs of these patterns at the beginning of Iteration002.  The process continues until there are no more patterns, because no non-null overlaps can be generated.  This process can still blow up, but in an HPC environment it can be completed for reasonable-length patterns (~100 SNPs) and a modest number of starting patterns.  Alternatively, it is possible to terminate the process early when most of the unique patterns have already appeared.</p>
+
+<p>To start the process, run</p>
+
+<pre>
+<code>
+sh HOME_DIR/ChromosomeOverlap_iteration_sub.sh NAME 2 2,j "" "DIRECTORY" HOME_DIR
+</code>
+</pre>
+
+<p>If HOME_DIR is on your PATH, you do not need to enter the entire line.  NAME is the identifier we have been using; it should direclty follow "Iteration000" in your Pattern_combined file.  The next entries indicate <var>&sigma;=2</var> and the pattern type <var>2,j</var> where a fixed chromosome was overlapped with a variable chromosome and the intersection taken.  You will usually not need to change these values.  The missing entry is the number of tuples computed per job, which is automatically altered to maintain a fixed number (100) of jobs.  Since we will be running the jobs in serial, we will leave this parameter alone.</p>
+
+<p>The overlaps are actually evaluated using the function</p>
+
+<pre>
+<code>
+HOME_DIR/ChromosomeOverlap_iteration.sh Pattern_combined.Iteration00X.NAME.txt "" 1000000 2 "Iteration00(X+1)" "DIRECTORY" "HOME_DIR"
+</code>
+</pre>
+
+<p>This function overlaps a range of the <var>&sigma;</var>-tuples of rows of the input file (actually columns of the transposed input file).  The second input is automatically filled in and determines what range of tuples to do using the <kbd>index2combo2.sh</kbd> function.  The third input is fixed an simply means that at most 1000000 tuples will be evaluated before another step will be started.  As before, <var>&sigma;=2</var>, and <kbd>Iteration00(X+1)</kbd> names the next series of overlaps.  You will notice that this function creates a sub-directory Iteration00X.Step01 in which a series of files called <kbd>Overlap_tuples....</kbd> will be generated.  These get combined by the function <kbd>ChromosomeOverlap_iteration_combine</kbd> into the new Pattern_combined.Iteration00(X+1) file.  Files that have been combined then get moved to a subdirectory <kbd>Iteration00X</kbd> in case you need to run theoverlap step again.</p>
+
+<p>Another function of the submission script is to find patterns that <i>appear</i> or <i>disappear</i> at the end of each iteration.  Another script <kbd>file_compare.sh</kbd> simply looks for lines in <kbd>TEST_FILE</kbd> that are not in <kbd>REF_FILE</kbd>.  When <kbd>TEST_FILE</kbd> is <kbd>Pattern_combined.Iteration00(X+1)</kbd> and <kbd>REF_FILE</kbd> is <kbd>Pattern_combined.Iteration00X</kbd>, the new patterns that have appeared at the end of iteration X+1 are produced (i.e., <i>pre-closed patterns</i>); when <kbd>TEST_FILE</kbd> is <kbd>Pattern_combined.Iteration00X</kbd> and <kbd>REF_FILE</kbd> is <kbd>Pattern_combined.Iteration00(X+1)</kbd>, the old patterns that have disappeared at the end of iteration X+1 are produced (i.e., <i>post-closed patterns</i>).  Because every pattern that appears must subsequently disappear, and the pre-closed patterns should eventually become post-closed patterns.  The pre- and post-patterns are tabulated, together with the iteration of the appearance or disappearnace, in <kbd>Closed_patterns_pre.NAME.stats</kbd> and <kbd>Closed_patterns_post.NAME.stats</kbd>, respectively.</p>
+
