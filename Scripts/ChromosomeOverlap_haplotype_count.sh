@@ -12,7 +12,7 @@ HAPLOTYPES=$2 # multi-column file with (optional) iteration number in first colu
 INDEX=$3 # optional index of the form STEP_SIZE.STEP_NO to indicate the range (STEP_NO-1)*STEP_SIZE to STEP_NO*STEP_SIZE-1 of haplotypes to analyze
 ITERATION=$4 # optional overlap iteration at which pattern was found
 NAME=$5 # optional name for output files
-DIRECTORY=$6 # location to store output/where .indiv files are found
+DIRECTORY=$6 # location to store output
 
 if [ -z $DIRECTORY ];
 then
