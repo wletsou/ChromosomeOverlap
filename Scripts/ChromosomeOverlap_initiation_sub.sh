@@ -28,7 +28,7 @@ echo Pattern files stored in $DIRECTORY
 
 file_ID=${HAPLOTYPES_FILE%.*} # name of haplotype_estimates transpose file minus file extension
 
-n_samples=$(awk 'BEGIN{nf=0} {if (NF>nf) {nf=NF} } END{print nf}' $HAPLOTYPES_FILE) # columns (includes rsid)
+n_samples=$(awk 'BEGIN{nf=0} {if (NF>nf) {nf=NF} } END{print nf-1}' $HAPLOTYPES_FILE) # columns (does not include rsid column)
 n_snps=$(awk 'END{print NR}' $HAPLOTYPES_FILE)
 
 if [ -z $OUTPUT ]; # Optional file extension to name population, chromosome, and region
@@ -66,9 +66,10 @@ then
     # For the case that RANGE is of the form STEP_SIZE.STEP
     ll=$(($((RANGE[1]-1))*${RANGE[0]})) # (i - 1) * step_size
     ul=$((RANGE[1]*RANGE[0]-1)) # i * step_size
-  elif ((${#RANGE[@]}==2))
+  elif ((${#RANGE[@]}==1))
   then
     # For the case that RANGE is of the form LOWER,UPPER
+    RANGE=($(echo $RANGE | perl -pne 's/([0-9]+)[,]+/$1 /g'))
     ll=${RANGE[0]} # starting tuple index
     ul=${RANGE[1]} # unding tuple index
   else
@@ -100,14 +101,14 @@ do
   str=${str}$(echo ",\$i$i")
 done
 let j=$n_samples+1
-str=${str}$(echo ",$j; k=\$((\$k+1));")
+str=${str}$(echo ",$j; k=\$((k+1));")
 str=${str}$(echo " if (( \$k=="$((${RANGE[1]}+1))" )); then break $SIGMA; fi;") # stop counting when reaching upper level of RANGE
 for i in `seq 1 $SIGMA`
 do
   str=${str}$(echo " done;")
 done
 echo $str
-eval $str
+eval "$str" || echo error
 printf "\n"
 
 echo Array of joining tuples \(of rows\) is:
@@ -123,12 +124,12 @@ do
   error=1 #check that the only eror message is `$' treated as plain `$', else repeat call to subject_overlap.sh
   while (($error!=0))
   do
-    echo Now running "sh ${HOME_DIR}subject_overlap.sh $HAPLOTYPES_FILE ${INDEX[$i]} 2> subject_overlap_error_${file_ID}_${INDEX[$i]}.err"
-    str=$(echo "sh ${HOME_DIR}subject_overlap.sh $HAPLOTYPES_FILE ${INDEX[$i]} 2> subject_overlap_error_${file_ID}_${INDEX[$i]}.err")
+    echo Now running "sh ${HOME_DIR}ChromosomeOverlap_initiation.sh $HAPLOTYPES_FILE ${INDEX[$i]} 2> subject_overlap_error_${file_ID}_${INDEX[$i]}.err"
+    str=$(echo "sh ${HOME_DIR}ChromosomeOverlap_initiation.sh $HAPLOTYPES_FILE ${INDEX[$i]} 2> subject_overlap_error_${file_ID}_${INDEX[$i]}.err")
     printf "\n"
     code=$(echo $str)
     start=$(date +%s.%N)
-    eval "$code"
+    eval "$code" || echo error
     finish=$(date +%s.%N)
     awk 'BEGIN{duration='$finish'-'$start';printf "Overlap completed in %0.2f s.\n",duration}'
     printf "\n"
