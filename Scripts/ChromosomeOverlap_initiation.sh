@@ -1,4 +1,7 @@
 #! /bin/bash
+
+# Overlaps the variable chromosome(s) given by the column(s) INDEX of the (transposed) HAPLOTYPES_FILE with every column j of the HAPLOTYPES file which is greater than the maximum column in INDEX
+
 HAPLOTYPES_FILE=$1 # Matrix of snp genotypes (rows) x subjects (columns), no header, but first column is rsids
 INDEX=$2 # comma-separated list i1,...i-(sigma-1),j, where i are the fixed chromosomes and j is the variable chromosome; set j to the maximum chromosome index and it will be replaced; example: 2,100 overlaps column 2 with every column up to 100; 2,3,100 overlaps columns 2 and 3 with every column
 TRANSPOSE=$3 # whether to transpose input file from subjects (rows) x genotypes (columns); set to any non-null value

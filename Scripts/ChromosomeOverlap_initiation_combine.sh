@@ -2,7 +2,7 @@
 
 # Combine files of the same overlap type and total the number of unique patterns
 
-# /home/wletsou/scripts/ChromosomeOverlap_initiation_combine.sh chr11.69231642-69431642 1 "Iteration000" "" /scratch_space/wletsou/sjlife/GWAS/ChromosomeOverlapTest
+# HOME_DIR/ChromosomeOverlap_initiation_combine.sh chr11.69231642-69431642 1 "Iteration000" DIRECTORY
 
 POPULATION=$1 # single population name whose tuples are to be combined
 COMBINE_GROUPS=$2 # whether to merge files with the same number of bar groups, e.g., 2,3+j 2,j+3 and 2+3,j form a two-group pattern
@@ -14,43 +14,14 @@ then
   DIRECTORY=$PWD
 fi
 echo Output directory is $DIRECTORY
+printf "\n"
 # Do NOT cd $DIRECTORY, because POPULATION files are in the submission directory, not the output directory
 
 if [ -z $NAME ];
 then
-  NAME="Iteration000" # label for Pattern_combined files
+  NAME=".Iteration000" # label for Pattern_combined files
 fi
 # create folder to store all files with the same pattern
-if [ ! -z $NAME ];
-then
-  SUBDIR=${NAME}
-  NAME=".${NAME}"
-else
-  SUBDIR="Iteration000"
-  NAME=".${SUBDIR}"
-fi
-
-# create subdirectory for original files to be moved after combinations complete
-test ! -d $SUBDIR && echo mkdir ${DIRECTORY}/${SUBDIR} && printf "\n"
-test ! -d $SUBDIR && mkdir ${DIRECTORY}/${SUBDIR}
-
-test -d $SUBDIR && echo cd $SUBDIR && printf "\n"
-test -d $SUBDIR && cd $SUBDIR
-if [ "${PWD##*/}" == "${SUBDIR}" ]; # if current directory (after removing up to rightmost slash) is the same as the subdirectory, i.e., if successfully in the SUBDIR, then remove other Pattern files
-then
-  for file in Pattern*.${POPULATION}.*.txt
-  do
-    if [ -f $file ]
-    then
-      test -f $file && found+=1 # counter whether any files have been removed
-      test -f $file && echo rm $file
-      test -f $file && rm $file
-    fi
-  done
-  test ! -z $found && (( $found>0 )) && found=0 && printf "\n"
-fi
-test -d $DIRECTORY && echo cd $DIRECTORY && printf "\n"
-test -d $DIRECTORY && cd $DIRECTORY
 
 for file in Pattern_combined${NAME}.${POPULATION}* # careful only to delete Pattern_combined files on Iteration000
 do
@@ -201,9 +172,8 @@ do
   test -f ${file%_*}_${pattern}.tmp && echo rm ${file%_*}_${pattern}.tmp && printf "\n"
   test -f ${file%_*}_${pattern}.tmp && rm ${file%_*}_${pattern}.tmp
 
-  echo mv $file ${DIRECTORY}/${SUBDIR}/${file##*/} #extract file name and move to subdirectory
-  mv $file ${DIRECTORY}/${SUBDIR}/${file##*/} #extract file name and move to subdirectory
-  printf "\n"
+  test -f $file && echo rm $file
+  test -f $file && rm $file && printf "\n"
 done
 
 # sum the first field for all unique occurences of fields 2 to 2 + $n_groups - 1

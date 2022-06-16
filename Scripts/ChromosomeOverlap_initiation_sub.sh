@@ -1,21 +1,22 @@
 #! /bin/bash
+set -e
 
 # loops through all SIGMA-tuples of chromosomes in the columns of HAPLOTYPES_FILE and look for SNPs that are the same across the group.  Output the unique patterns and their counts for each group type.  Relies on subject_overlap.sh to do overlaps and comparisons
 
-# /home/wletsou/scripts/ChromosomeOverlap_initiation_sub.sh haplotype_estimates_transpose.ukbb_bca_cases.chr11.69231642-69431642.1-100.txt 1 chr11.69231642-69431642 "" /scratch_space/wletsou/sjlife/GWAS/ChromosomeOverlapTest /home/wletsou/scripts
+# HOME_DIR/ChromosomeOverlap_initiation_sub.sh haplotype_estimates_transpose.ukbb_bca_cases.chr11.69231642-69431642.1-100.txt 1 chr11.69231642-69431642 "" DIRECTORY HOME_DIR
 
 HAPLOTYPES_FILE=$1 # transposed haplotypes file of snps x chromosomes
 SIGMA=$2 # (One fewer than) the number of chromosomes to overlap
 OUTPUT=$3 # Base file name for output Pattern.${OUTPUT}_*.txt
-RANGE=$4 # (optional) range of the tuples to use, indexed as "from,to" starting from 0 and ending at (2n choose sigma + 1) - 1; if empty, computes all combinations
+RANGE=$4 # (optional) range of the tuples to use, indexed as "from,to" or "step_size.step_number" starting from 0 and ending at (2n choose sigma + 1) - 1; if empty, computes all combinations
 DIRECTORY=$5 # Folder to store output Pattern file
 HOME_DIR=$6 # location of program files
 
-module load R/3.6.1
-
 if [ -z $HOME_DIR ];
 then
-  HOME_DIR=$PWD
+  HOME_DIR="" # in case HOME_DIR is on your PATH
+else
+  HOME_DIR="${HOME_DIR}/"
 fi
 
 if [ -z $DIRECTORY ];
@@ -57,16 +58,34 @@ else
   n_tuples=0
 fi
 
-# Lower and upper limits of the combination indices, for parallel implementation, starting from 0
 if [ ! -z $RANGE ]; # user-provided comma-separated list lower,upper limits on combinations to perform in this round
 then
-  RANGE=($(echo $RANGE | perl -pne 's/([0-9]+)[,]*/$1 /g'))
+  RANGE=($(echo $RANGE | perl -pne 's/([0-9]+)[.]+/$1 /g'))
+  if ((${#RANGE[@]}>1)) # length=1 if TUPLE_RANGE is a comma-separated list
+  then
+    # For the case that RANGE is of the form STEP_SIZE.STEP
+    ll=$(($((RANGE[1]-1))*${RANGE[0]})) # (i - 1) * step_size
+    ul=$((RANGE[1]*RANGE[0]-1)) # i * step_size
+  elif ((${#RANGE[@]}==2))
+  then
+    # For the case that RANGE is of the form LOWER,UPPER
+    ll=${RANGE[0]} # starting tuple index
+    ul=${RANGE[1]} # unding tuple index
+  else
+    (>&2 echo "Invalid range."; exit 1)
+  fi
+  (( $ll > $((n_tuples-1)) )) && ll=$((n_tuples-1))
+  (( $ul > $((n_tuples-1)) )) && ul=$((n_tuples-1))
+  (( $ll > $ul )) && (>&2 echo "Invalid range."; exit 1)
+  RANGE=(${ll} ${ul})
 else
-  RANGE=(0 $(($n_tuples-1))) # compute all combinations if none supplied
+  RANGE=(0 $((n_tuples-1))) # compute all combinations if none supplied
 fi
+echo Supplied range is \(${RANGE[0]},${RANGE[1]}\)
+printf "\n"
 
-echo Rscript ${HOME_DIR}/index2combo2.R I=${RANGE[0]} n=$n_samples sigma=$SIGMA
-out=($(Rscript ${HOME_DIR}/index2combo2.R I=${RANGE[0]} n=$n_samples sigma=$SIGMA)) #get the tuple corresponding to combination ${RANGE[0]} in the list of combinations from 0 to (n_rows choose SIGMA) - 1
+echo sh ${HOME_DIR}index2combo2.sh ${RANGE[0]} $n_samples $SIGMA
+out=($(sh ${HOME_DIR}index2combo2.sh ${RANGE[0]} $n_samples $SIGMA)) #get the tuple corresponding to combination ${RANGE[0]} in the list of combinations from 0 to (n_rows choose SIGMA) - 1
 echo First joining tuple \(of rows\) is:
 declare -p out
 str="let k=${RANGE[0]}; for i1 in \`seq $((${out[0]}+1)) $n_samples\`;" # add 1 since 1st column is subject IDs, i.e., every column is shifted over by 1
@@ -104,8 +123,8 @@ do
   error=1 #check that the only eror message is `$' treated as plain `$', else repeat call to subject_overlap.sh
   while (($error!=0))
   do
-    echo Now running "sh ${HOME_DIR}/subject_overlap.sh $HAPLOTYPES_FILE ${INDEX[$i]} 2> subject_overlap_error_${file_ID}_${INDEX[$i]}.err"
-    str=$(echo "sh ${HOME_DIR}/subject_overlap.sh $HAPLOTYPES_FILE ${INDEX[$i]} 2> subject_overlap_error_${file_ID}_${INDEX[$i]}.err")
+    echo Now running "sh ${HOME_DIR}subject_overlap.sh $HAPLOTYPES_FILE ${INDEX[$i]} 2> subject_overlap_error_${file_ID}_${INDEX[$i]}.err"
+    str=$(echo "sh ${HOME_DIR}subject_overlap.sh $HAPLOTYPES_FILE ${INDEX[$i]} 2> subject_overlap_error_${file_ID}_${INDEX[$i]}.err")
     printf "\n"
     code=$(echo $str)
     start=$(date +%s.%N)
@@ -167,8 +186,8 @@ do
       done
 
       echo Determine expected number of groups:
-      echo sh ${HOME_DIR}/StirlingSum.sh ${#INDEX_ARRAY[@]}
-      S=$(sh ${HOME_DIR}/StirlingSum.sh ${#INDEX_ARRAY[@]}) # total number of partitions of INDEX[$i]
+      echo sh ${HOME_DIR}StirlingSum.sh ${#INDEX_ARRAY[@]}
+      S=$(sh ${HOME_DIR}StirlingSum.sh ${#INDEX_ARRAY[@]}) # total number of partitions of INDEX[$i]
       echo Expected $S file$((($S==1)) && echo "" || echo "s"), found ${#files_array[@]}
       printf "\n"
       if ((${#files_array[@]}!=$S))
