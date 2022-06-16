@@ -171,9 +171,6 @@ do
   test ! -d $SUBDIR && echo mkdir $SUBDIR && printf "\n"
   test ! -d $SUBDIR && mkdir $SUBDIR
 
-  test -d $SUBDIR && echo cd $SUBDIR && printf "\n"
-  test -d $SUBDIR && cd $SUBDIR # submit overlap jobs from SUBDIR
-
   echo Moving copy of Pattern_combined.${file_str}* to $SUBDIR
   for file in ${DIRECTORY}/Pattern_combined.${file_str}*${NAME}*${PATTERN}.txt
   do

@@ -73,6 +73,7 @@ then
   elif ((${#RANGE[@]}==2))
   then
     # For the case that RANGE is of the form LOWER,UPPER
+    RANGE=($(echo $RANGE | perl -pne 's/([0-9]+)[,]+/$1 /g'))
     ll=${RANGE[0]} # starting tuple index
     ul=${RANGE[1]} # unding tuple index
   else
