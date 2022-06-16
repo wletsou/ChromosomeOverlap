@@ -1,6 +1,6 @@
 <h1>Instructions</h1>
 
-This document outlines how to perform Chromosome Overlap on a single machine in a bash shell.  Users may parallelize computations on an HPC environment by selecting a range of steps to perform in each <kbd>_sub</kbd> operation.  The goal is to obtain a list of closed haplotype patterns from (filtered meta-)chromosomes from a population.  Users may download the scripts to a convenient location called <kbd>HOME_DIR</kbd> type the full path when needed or add them to their <kbd>PATH</kbd> variable.
+This document outlines how to perform Chromosome Overlap on a single machine in a bash shell.  Users may parallelize computations on an HPC environment by selecting a range of steps to perform in each <kbd>_sub</kbd> operation.  The goal is to obtain a list of closed haplotype patterns from (filtered meta-)chromosomes from a population.  Users may download the scripts or clone them with git to a convenient location called <kbd>HOME_DIR</kbd> type the full path when needed or add them to their <kbd>PATH</kbd> variable.
 
 <h2>Initiation</h2>
 
