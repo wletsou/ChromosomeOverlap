@@ -16,7 +16,7 @@ then
   do
     cut -f$i $HAPLOTYPES_FILE | paste -s # paste column as a row
   done > subjects_${file_ID}_${INDEX}.txt
-  n_subjects=$(awk 'END{print NF}' subjects_${file_ID}_${INDEX}.txt)
+  n_subjects=$(awk 'END{print NF-1}' subjects_${file_ID}_${INDEX}.txt)
   n_snps=$(awk 'END{print NR}' subjects_${file_ID}_${INDEX}.txt)
 else
   n_subjects=$(awk 'END{print NF}' $HAPLOTYPES_FILE)
@@ -167,7 +167,7 @@ do
     MAXIND=0
     for ((i=0;i<${#array[@]};i++));
     do
-      if ((${array[i]} > MAXIND));
+      if ((${array[i]} > $MAXIND));
       then
         MAXIND=${array[i]}
       fi
@@ -240,7 +240,11 @@ do
         for (i = 2; i <= n; i++) {
           val[\$1]=val[\$1]\$array[i]
         } for (i = 2; i <= NF; i++) {
-          \$i=val[\$1]
+          if (i > $MAXIND) {
+            \$i=val[\$1]
+          } else {
+            \$i=\"NA\"
+          }
         } {
           print
         }
@@ -264,6 +268,8 @@ do
       echo Evaluate for j alone:
       echo cp \--remove-destination subjects_${file_ID}_${INDEX_NEW}_${COMBO_file}_${partition_file}.txt subjects_${file_ID}_${INDEX}_temp.txt
       cp --remove-destination subjects_${file_ID}_${INDEX_NEW}_${COMBO_file}_${partition_file}.txt subjects_${file_ID}_${INDEX}_temp.txt
+      # echo awk \'BEGIN{OFS=\"\\t\"} {for \(i=2\;i\<=NF\;i++\) {if \(i \<= $MAXIND\) {\$i=\"NA\"} }\; print \$0}\' subjects_${file_ID}_${INDEX}_temp.txt \> subjects_${file_ID}_${INDEX_NEW}_${COMBO_file}_${partition_file}.txt
+      # awk 'BEGIN{OFS="\t"} {for (i=2;i<=NF;i++) {if (i <= '$MAXIND') {$i="NA"} }; print $0}' subjects_${file_ID}_${INDEX}_temp.txt > subjects_${file_ID}_${INDEX_NEW}_${COMBO_file}_${partition_file}.txt && printf "\n"
       echo write file subjects_${file_ID}_${INDEX_NEW}_${COMBO_file}_${partition_file}.txt
       cp --remove-destination subjects_${file_ID}_${INDEX}_temp.txt subjects_${file_ID}_${INDEX_NEW}_${COMBO_file}_${partition_file}.txt
       printf "\n"
@@ -338,10 +344,10 @@ do
     let f_count=$f_count+1
     if (( $f_count == 2 ));
     then
-      str=$(echo "awk -F\"\t\" 'BEGIN{OFS=FS} FILENAME==ARGV[1]{line[\$1]=\$1; pattern[\$1]=\$2; array1[\$1]=\$3; next}; (\$1 in line) {n=split(array1[\$1],snps1,\",\"); m=split(\$3,snps2,\",\"); asort(snps1); asort(snps2); idx = 0; for (i1 =1; i1<=n; i1++) {count = 0; for (i2=1; i2<=m; i2++) {if (snps1[i1]==snps2[i2]) { count++; break }} if (count == 0) {if (idx == 0) {\$2=pattern[\$1]; \$3=snps1[i1]; idx++} else {\$2=pattern[\$1]; \$3=\$3\",\"snps1[i1];}} if (idx == 0) {\$2=pattern[\$1]; \$3=\"\";} }} { print }'" )
+      str=$(echo "awk -F\"\t\" 'BEGIN{OFS=FS} FILENAME==ARGV[1]{line[\$1]=\$1; pattern[\$1]=\$2; array1[\$1]=\$3; next}; (\$1 in line) {n=split(array1[\$1],snps1,\",\"); m=split(\$3,snps2,\",\"); asort(snps1); asort(snps2); idx = 0; for (i1 =1; i1<=n; i1++) {count = 0; for (i2=1; i2<=m; i2++) {if (snps1[i1]==snps2[i2]) { count++; break }} if (count == 0) {if (idx == 0) {\$2=pattern[\$1]; \$3=snps1[i1]; idx++} else {\$2=pattern[\$1]; \$3=\$3\",\"snps1[i1];}} if (idx == 0) {\$2=pattern[\$1]; \$3=\"\";} } print \$0}'" )
     else
       #last step prints values in file1 not in any of the others, i.e., checks if the snps previously "found" to be unique ("snps_prev") are still unique in the last file; also prints line number and pattern type
-      str=${str}$(echo " FILENAME==ARGV[$f_count]{ if (\$1 in line) {n=split(found[\$1],snps_prev,\",\"); m=split(\$3,snps$f_count,\",\"); asort(snps_prev); asort(snps$f_count); idx = 0; for (i=1; i<=n; i++) {count = 0; for (i$f_count=1; i$f_count<=m; i$f_count++) {if (snps_prev[i] == snps$f_count[i$f_count]) { count++; break }} if (count == 0) {if (idx == 0) {\$2=pattern[\$1]; \$3=snps_prev[i]; idx++} else {\$2=pattern[\$1]; \$3=\$3\",\"snps_prev[i];}} if (idx == 0) {\$2=pattern[\$1]; \$3=\"\";} } { print } } }'")
+      str=${str}$(echo " FILENAME==ARGV[$f_count]{ if (\$1 in line) {n=split(found[\$1],snps_prev,\",\"); m=split(\$3,snps$f_count,\",\"); asort(snps_prev); asort(snps$f_count); idx = 0; for (i=1; i<=n; i++) {count = 0; for (i$f_count=1; i$f_count<=m; i$f_count++) {if (snps_prev[i] == snps$f_count[i$f_count]) { count++; break }} if (count == 0) {if (idx == 0) {\$2=pattern[\$1]; \$3=snps_prev[i]; idx++} else {\$2=pattern[\$1]; \$3=\$3\",\"snps_prev[i];}} if (idx == 0) {\$2=pattern[\$1]; \$3=\"\";} } print \$0 } }'")
     fi
 
     #loop over all ways of selecting a bar group to be file1
@@ -395,7 +401,7 @@ do
     do
       str=${str}$(echo " FILENAME==ARGV[$i]{if (length(snps$((i-1))[FNR])>0) {n=split(\$3,array,\",\"); for (i=1;i<=n;i++) {b=gensub(\"([0-9]*)_[0-9]*\",\"\\\\1\",\"g\",array[i]); if (b in snps$((i-1))[FNR]) {snps$i[FNR][b]} } } next }")
     done
-    str=${str}$(echo " FILENAME==ARGV[$f_count]{if (length(snps$((f_count-1))[FNR])>0) {found=0; n=split(\$3,array,\",\"); for (i=1;i<=n;i++) {b=gensub(\"([0-9]*)_[0-9]*\",\"\\\\1\",\"g\",array[i]); if (b in snps$((f_count-1))[FNR]) {printf \"%s%s\",(found>0?\",\":\"\"),array[i]; found++} } } if (found>0) {printf \"\\n\"} next }'") && printf "\n"
+    str=${str}$(echo " FILENAME==ARGV[$f_count]{if (length(snps$((f_count-1))[FNR])>0) {str=\"\"; found=0; n=split(\$3,array,\",\"); for (i=1;i<=n;i++) {b=gensub(\"([0-9]*)_[0-9]*\",\"\\\\1\",\"g\",array[i]); if (b in snps$((f_count-1))[FNR]) {str=sprintf(\"%s%s%s\",str,(found>0?\",\":\"\"),array[i]); found++} } if (found>0) {\$3=str; print \$0} } next }'") && printf "\n"
 
     # loop over all segments of the partition of the COMBO and print alleles of snps that appear in all segments
     for partition in $BAR_COMBO
@@ -422,6 +428,7 @@ do
       test -f $file && echo mv $file ${file%.*}.txt
       test -f $file && mv $file ${file%.*}.txt && printf "\n"
     done
+    exit
   else
     echo Write unique snps in ${file//snps/snps_unique}
     cp $file ${file//snps/snps_unique}
