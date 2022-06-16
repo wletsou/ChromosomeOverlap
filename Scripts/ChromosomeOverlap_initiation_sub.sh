@@ -327,7 +327,7 @@ do
         done
         # only pick lines from file shared by all other files in bar grouping; append column of found SNPs in bar group onto others in grouping
         echo Keep only chromosome tuples \(col 1\) from $file shared by all members of the bar group ${pattern_array[$j]}:
-        echo awk \-F\"\\t\" \'BEGIN{OFS=FS} NR==FNR{group[\$1]=\$1\;next} \$1 in group {print \$0}\' overlap${OUTPUT}_${pattern_array[$j]}.txt $file \ cut \-f 3- \| paste Pattern${OUTPUT}_${pattern_array[$j]}_temp.txt \- \> Pattern${OUTPUT}_${pattern_array[$j]}_temp1.txt
+        echo awk \-F\"\\t\" \'BEGIN{OFS=FS} NR==FNR{group[\$1]=\$1\;next} \$1 in group {print \$0}\' overlap${OUTPUT}_${pattern_array[$j]}.txt $file \| cut \-f 3- \| paste Pattern${OUTPUT}_${pattern_array[$j]}_temp.txt \- \> Pattern${OUTPUT}_${pattern_array[$j]}_temp1.txt
         awk -F"\t" 'BEGIN{OFS=FS} NR==FNR{group[$1]=$1;next} $1 in group {print $0}' overlap${OUTPUT}_${pattern_array[$j]}.txt $file | cut -f 3- | paste Pattern${OUTPUT}_${pattern_array[$j]}_temp.txt - > Pattern${OUTPUT}_${pattern_array[$j]}_temp1.txt
         printf "\n"
 
