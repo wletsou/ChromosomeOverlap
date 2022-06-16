@@ -396,7 +396,7 @@ do
 
     # for exclusive patterns, make sure the snp appears in each file (with a different allele)
     echo Find alleles that are different in each file:
-    str=$(echo "awk 'FILENAME==ARGV[1]{n=split(\$3,array,\",\"); for (i=1;i<=n;i++) {b=gensub(\"([0-9]*)_[0-9]*\",\"\\\\1\",\"g\",array[i]); snps1[NR][b]} next}")
+    str=$(echo "awk 'BEGIN{OFS=\"\\t\"} FILENAME==ARGV[1]{n=split(\$3,array,\",\"); for (i=1;i<=n;i++) {b=gensub(\"([0-9]*)_[0-9]*\",\"\\\\1\",\"g\",array[i]); snps1[NR][b]} next}")
     for i in `seq 2 $((f_count-1))`
     do
       str=${str}$(echo " FILENAME==ARGV[$i]{if (length(snps$((i-1))[FNR])>0) {n=split(\$3,array,\",\"); for (i=1;i<=n;i++) {b=gensub(\"([0-9]*)_[0-9]*\",\"\\\\1\",\"g\",array[i]); if (b in snps$((i-1))[FNR]) {snps$i[FNR][b]} } } next }")
