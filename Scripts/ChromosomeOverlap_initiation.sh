@@ -428,7 +428,6 @@ do
       test -f $file && echo mv $file ${file%.*}.txt
       test -f $file && mv $file ${file%.*}.txt && printf "\n"
     done
-    exit
   else
     echo Write unique snps in ${file//snps/snps_unique}
     cp $file ${file//snps/snps_unique}
