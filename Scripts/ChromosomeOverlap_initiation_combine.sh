@@ -20,6 +20,8 @@ printf "\n"
 if [ -z $NAME ];
 then
   NAME=".Iteration000" # label for Pattern_combined files
+else
+  NAME=".${NAME}"
 fi
 # create folder to store all files with the same pattern
 
