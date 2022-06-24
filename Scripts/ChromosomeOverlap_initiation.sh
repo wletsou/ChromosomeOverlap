@@ -1,4 +1,5 @@
 #! /bin/bash
+set -e
 
 # Overlaps the variable chromosome(s) given by the column(s) INDEX of the (transposed) HAPLOTYPES_FILE with every column j of the HAPLOTYPES file which is greater than the maximum column in INDEX
 
@@ -325,7 +326,7 @@ do
     echo $file
     let f_count=$f_count+1
   done
-  let f_count=$f_count-1
+  f_count=$((f_count-1))
   n_bars=$(echo $COMBO_NEW | awk "{print gsub(\"[|]\",\"\",\$0)}")
   echo Number of bars in the pattern is $n_bars and file count is $f_count beyond the first
   printf "\n"
@@ -372,6 +373,7 @@ do
       eval "$code3"
       printf "\n"
 
+
       # remove lines with fewer than the req'd number of chromosomes grouped, e.g., remove "1" lines when the rest are "11"
       n_comma=$(echo $partition_file | tr -cd "," | wc -c)
       let n_comma=$n_comma+1
@@ -396,12 +398,12 @@ do
 
     # for exclusive patterns, make sure the snp appears in each file (with a different allele)
     echo Find alleles that are different in each file:
-    str=$(echo "awk 'BEGIN{OFS=\"\\t\"} FILENAME==ARGV[1]{n=split(\$3,array,\",\"); for (i=1;i<=n;i++) {b=gensub(\"([0-9]*)_[0-9]*\",\"\\\\1\",\"g\",array[i]); snps1[NR][b]} next}")
+    str=$(echo "awk 'BEGIN{OFS=\"\\t\"} FILENAME==ARGV[1]{n=split(\$3,array,\",\"); for (i=1;i<=n;i++) {b=gensub(\"([0-9]*)_[0-9]*\",\"\\\\1\",\"g\",array[i]); snps1[\$1][b]} next}")
     for i in `seq 2 $((f_count-1))`
     do
-      str=${str}$(echo " FILENAME==ARGV[$i]{if (length(snps$((i-1))[FNR])>0) {n=split(\$3,array,\",\"); for (i=1;i<=n;i++) {b=gensub(\"([0-9]*)_[0-9]*\",\"\\\\1\",\"g\",array[i]); if (b in snps$((i-1))[FNR]) {snps$i[FNR][b]} } } next }")
+      str=${str}$(echo " FILENAME==ARGV[$i]{if (length(snps$((i-1))[\$1])>0) {n=split(\$3,array,\",\"); for (i=1;i<=n;i++) {b=gensub(\"([0-9]*)_[0-9]*\",\"\\\\1\",\"g\",array[i]); if (b in snps$((i-1))[\$1]) {snps$i[\$1][b]} } } next }")
     done
-    str=${str}$(echo " FILENAME==ARGV[$f_count]{if (length(snps$((f_count-1))[FNR])>0) {str=\"\"; found=0; n=split(\$3,array,\",\"); for (i=1;i<=n;i++) {b=gensub(\"([0-9]*)_[0-9]*\",\"\\\\1\",\"g\",array[i]); if (b in snps$((f_count-1))[FNR]) {str=sprintf(\"%s%s%s\",str,(found>0?\",\":\"\"),array[i]); found++} } if (found>0) {\$3=str; print \$0} } next }'") && printf "\n"
+    str=${str}$(echo " FILENAME==ARGV[$f_count]{if (length(snps$((f_count-1))[\$1])>0) {str=\"\"; found=0; n=split(\$3,array,\",\"); for (i=1;i<=n;i++) {b=gensub(\"([0-9]*)_[0-9]*\",\"\\\\1\",\"g\",array[i]); if (b in snps$((f_count-1))[\$1]) {str=sprintf(\"%s%s%s\",str,(found>0?\",\":\"\"),array[i]); found++} } if (found>0) {\$3=str; print \$0} } next }'") && printf "\n"
 
     # loop over all segments of the partition of the COMBO and print alleles of snps that appear in all segments
     for partition in $BAR_COMBO
@@ -425,8 +427,8 @@ do
 
     for file in snps_unique_${file_ID}_${INDEX_NEW}_${COMBO_file}*.tmp
     do
-      test -f $file && echo mv $file ${file%.*}.txt
-      test -f $file && mv $file ${file%.*}.txt && printf "\n"
+      test -f $file && echo mv $file ${file%.*}.txt || printf ""
+      test -f $file && mv $file ${file%.*}.txt && printf "\n" || printf ""
     done
   else
     echo Write unique snps in ${file//snps/snps_unique}

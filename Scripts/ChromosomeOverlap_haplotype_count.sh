@@ -10,7 +10,7 @@ set -e
 POPULATION=$1 # comma-separated list of case,control haplotype_estimates files
 HAPLOTYPES=$2 # multi-column file with (optional) iteration number in first column and pattern name in the last OR a colon-separated list
 INDEX=$3 # optional index of the form STEP_SIZE.STEP_NO to indicate the range (STEP_NO-1)*STEP_SIZE to STEP_NO*STEP_SIZE-1 of haplotypes to analyze
-ITERATION=$4 # optional overlap iteration at which pattern was found
+ITERATION=$4 # optional overlap iteration at which pattern was found; only use if HAPLOTYPES's first column is iteration number
 NAME=$5 # optional name for output files
 DIRECTORY=$6 # location to store output
 
@@ -51,9 +51,9 @@ ul=$((${INDEX_ARRAY[1]}*${INDEX_ARRAY[0]}-1))
 echo Range: \(${ll},${ul}\)
 printf "\n"
 
-test -f haplotype_segregation${NAME}.patterns_$(printf "%0.${char}d-%0.${char}d" ${ll} ${ul}).txt && echo rm haplotype_segregation${NAME}.patterns_$(printf "%0.${char}d-%0.${char}d" ${ll} ${ul}).txt && printf "\n"
-test -f haplotype_segregation${NAME}.patterns_$(printf "%0.${char}d-%0.${char}d" ${ll} ${ul}).txt && rm haplotype_segregation${NAME}.patterns_$(printf "%0.${char}d-%0.${char}d" ${ll} ${ul}).txt
-touch haplotype_segregation${NAME}.patterns_$(printf "%0.${char}d-%0.${char}d" ${ll} ${ul}).txt
+test -f haplotype_segregation${NAME}.patterns_$(printf "%0.${char}d-%0.${char}d" ${ll} ${ul}).txt && echo rm haplotype_segregation${NAME}.patterns_$(printf "%0.${char}d-%0.${char}d" ${ll} ${ul}).txt || printf ""
+test -f haplotype_segregation${NAME}.patterns_$(printf "%0.${char}d-%0.${char}d" ${ll} ${ul}).txt && rm haplotype_segregation${NAME}.patterns_$(printf "%0.${char}d-%0.${char}d" ${ll} ${ul}).txt || printf ""
+touch haplotype_segregation${NAME}.patterns_$(printf "%0.${char}d-%0.${char}d" ${ll} ${ul}).txt && printf "\n" || printf ""
 
 for ((i=$ll;i<=$ul;i++))
 do

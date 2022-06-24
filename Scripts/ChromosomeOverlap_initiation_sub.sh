@@ -25,7 +25,8 @@ then
 fi
 echo Pattern files stored in $DIRECTORY
 # Do NOT cd $DIRECTORY, because POPULATION files are in the submission directory, not the output directory
-
+[ ! -f $HAPLOTYPES_FILE ] && (>&2 echo "Haplotypes file not found."; exit 1)
+[ -z $HAPLOTYPES_FILE ] && (>&2 echo "Haplotypes file not supplied."; exit 1)
 file_ID=${HAPLOTYPES_FILE%.*} # name of haplotype_estimates transpose file minus file extension
 
 n_samples=$(awk 'BEGIN{nf=0} {if (NF>nf) {nf=NF} } END{print nf-1}' $HAPLOTYPES_FILE) # columns (does not include rsid column)
@@ -124,8 +125,8 @@ do
   error=1 #check that the only eror message is `$' treated as plain `$', else repeat call to subject_overlap.sh
   while (($error!=0))
   do
-    echo Now running "sh ${HOME_DIR}ChromosomeOverlap_initiation.sh $HAPLOTYPES_FILE ${INDEX[$i]} 2> subject_overlap_error_${file_ID}_${INDEX[$i]}.err"
-    str=$(echo "sh ${HOME_DIR}ChromosomeOverlap_initiation.sh $HAPLOTYPES_FILE ${INDEX[$i]} 2> subject_overlap_error_${file_ID}_${INDEX[$i]}.err")
+    echo Now running "sh ${HOME_DIR}ChromosomeOverlap_initiation.sh $HAPLOTYPES_FILE ${INDEX[$i]} > /dev/null 2> subject_overlap_error_${file_ID}_${INDEX[$i]}.err"
+    str=$(echo "sh ${HOME_DIR}ChromosomeOverlap_initiation.sh $HAPLOTYPES_FILE ${INDEX[$i]} > /dev/null 2> subject_overlap_error_${file_ID}_${INDEX[$i]}.err")
     printf "\n"
     code=$(echo $str)
     start=$(date +%s.%N)
@@ -210,9 +211,9 @@ do
     then
       for file in snps_unique_${file_ID}_${INDEX_NEW}_*.txt
       do
-        test -f $file && found+=1
-        test -f $file && echo rm $file
-        test -f $file && rm $file
+        test -f $file && found+=1 || printf ""
+        test -f $file && echo rm $file || printf ""
+        test -f $file && rm $file || printf ""
       done
       test ! -z $found && (( $found>0 )) && found=0 && printf "\n"
     else
@@ -237,7 +238,7 @@ do
     # get stamdard ordering in reference case from the 0-bar group
     for ((j=0; j<=$n_groups; j++))
     do
-      n_commas=$(($(echo ${files_array[$j]##*_} | tr -cd "," | wc -c)-1)) # trim to left of last remaining underscore _
+      n_commas=$(echo ${files_array[$j]##*_} | tr -cd "," | wc -c) # trim to left of last remaining underscore _
       echo Found $n_commas comma$( (( $n_commas!=1 )) && echo "s" || echo "") in file name ${files_array[$j]##*_}
       printf "\n"
       # https://www.linuxjournal.com/content/bash-parameter-expansion
@@ -272,8 +273,6 @@ do
 
   for ((j=0;j<=$n_groups;j++))
   do
-    # Remove files of total snps found in each bar group (i.e., not unique)
-
     # Initiate a file "Pattern_" for each bar grouping if the overlap INDEX is first in the RANGE
     echo Prefix is ${files_array[$j]}
     if (( i==${RANGE[0]} ));
@@ -281,8 +280,8 @@ do
       pattern_array+=(${files_array[$j]##*_})
       echo ${pattern_array[$j]}
 
-      test -f Pattern${OUTPUT}_${pattern_array[$j]}.txt && echo rm Pattern${OUTPUT}_${pattern_array[$j]}.txt && printf "\n"
-      test -f Pattern${OUTPUT}_${pattern_array[$j]}.txt && rm Pattern${OUTPUT}_${pattern_array[$j]}.txt && printf "\n"
+      test -f Pattern${OUTPUT}_${pattern_array[$j]}.txt && echo rm Pattern${OUTPUT}_${pattern_array[$j]}.txt || printf ""
+      test -f Pattern${OUTPUT}_${pattern_array[$j]}.txt && rm Pattern${OUTPUT}_${pattern_array[$j]}.txt && printf "\n" || printf ""
 
       echo touch Pattern${OUTPUT}_${pattern_array[$j]}.txt
       touch Pattern${OUTPUT}_${pattern_array[$j]}.txt
@@ -293,65 +292,19 @@ do
       printf "\n"
     fi
     printf "\n"
-    # Join the unique SNP paetterns in each bar group in as many columns as there are one fewer than the number of bars
-    for file in ${files_array[$j]}*.txt
-    do
-      test ! -f Pattern${OUTPUT}_${pattern_array[$j]}_temp.txt && echo touch Pattern${OUTPUT}_${pattern_array[$j]}_temp.txt && printf "\n"
-      test ! -f Pattern${OUTPUT}_${pattern_array[$j]}_temp.txt && touch Pattern${OUTPUT}_${pattern_array[$j]}_temp.txt
+    # Join the unique SNP patterns in each bar group in as many columns as there are one more than the number of bars
+    echo Array of files in the bar group ${pattern_array[$j]}:
+    array_f=($(for file_f in ${files_array[$j]}*.txt; do echo $file_f; done | sort)) # array of overlaps for different bar groups in a single pattern, e.g., (...2 ...j)
+    declare -p array_f
+    echo awk \'NR==FNR{group[\$1]=\$3\; next} \(\$1 in group\){group[\$1]=sprintf\(\"%s\\t%s\"\,group[\$1]\,\$3\)} END{for \(i in group\) {print group[i]} }\' ${array_f[*]} \> Pattern${OUTPUT}_${pattern_array[$j]}.tmp
+    awk 'BEGIN{OFS="\t"} NR==FNR{group[$1]=$3; next} ($1 in group){group[$1]=sprintf("%s\t%s",group[$1],$3)} END{for (i in group) {print group[i]} }' ${array_f[*]} > Pattern${OUTPUT}_${pattern_array[$j]}.tmp && printf "\n" # print patterns involving the same variable chromosome (first column)
 
-      if [ -f $file ];
-      then
-        echo cat $file \> overlap${OUTPUT}_${pattern_array[$j]}.txt
-        head $file
-        cat $file > overlap${OUTPUT}_${pattern_array[$j]}.txt
-        printf "\n"
-
-        echo Array of files in the bar group ${pattern_array[$j]}:
-        array_f=($(for file_f in ${files_array[$j]}*.txt; do echo $file_f; done | sort)) # array of overlaps for different bar groups in a single pattern, e.g., (...2 ...j)
-        declare -p array_f
-        printf "\n"
-
-        # starting from $file, see which lines the other files have in common
-        echo Get chromosome tuples in common among files of the bar group ${pattern_array[$j]}:
-        for ((k=0;k<${#array_f[@]};k++));
-        do
-          # echo ${array_f[$k]}
-          echo awk \-F\"\\t\" \'BEGIN{OFS=FS} NR==FNR{group[\$1]=\$1\;next} \$1 in group {print \$0}\' overlap${OUTPUT}_${pattern_array[$j]}.txt ${array_f[$k]} \> overlap${OUTPUT}_${pattern_array[$j]}_temp.txt
-          awk -F"\t" 'BEGIN{OFS=FS} NR==FNR{group[$1]=$1;next} $1 in group {print $0}' overlap${OUTPUT}_${pattern_array[$j]}.txt ${array_f[$k]} > overlap${OUTPUT}_${pattern_array[$j]}_temp.txt # first field is the chromosome tuple, second type of sharing (e.g., 00,11), third is the list of shared SNPs
-          echo head overlap${OUTPUT}_${pattern_array[$j]}_temp.txt
-          head overlap${OUTPUT}_${pattern_array[$j]}_temp.txt
-          printf "\n"
-
-          test -f overlap${OUTPUT}_${pattern_array[$j]}_temp.txt && echo mv overlap${OUTPUT}_${pattern_array[$j]}_temp.txt overlap${OUTPUT}_${pattern_array[$j]}.txt && printf "\n"
-          test -f overlap${OUTPUT}_${pattern_array[$j]}_temp.txt && mv overlap${OUTPUT}_${pattern_array[$j]}_temp.txt overlap${OUTPUT}_${pattern_array[$j]}.txt
-        done
-        # only pick lines from file shared by all other files in bar grouping; append column of found SNPs in bar group onto others in grouping
-        echo Keep only chromosome tuples \(col 1\) from $file shared by all members of the bar group ${pattern_array[$j]}:
-        echo awk \-F\"\\t\" \'BEGIN{OFS=FS} NR==FNR{group[\$1]=\$1\;next} \$1 in group {print \$0}\' overlap${OUTPUT}_${pattern_array[$j]}.txt $file \| cut \-f 3- \| paste Pattern${OUTPUT}_${pattern_array[$j]}_temp.txt \- \> Pattern${OUTPUT}_${pattern_array[$j]}_temp1.txt
-        awk -F"\t" 'BEGIN{OFS=FS} NR==FNR{group[$1]=$1;next} $1 in group {print $0}' overlap${OUTPUT}_${pattern_array[$j]}.txt $file | cut -f 3- | paste Pattern${OUTPUT}_${pattern_array[$j]}_temp.txt - > Pattern${OUTPUT}_${pattern_array[$j]}_temp1.txt
-        printf "\n"
-
-        echo cat Pattern${OUTPUT}_${pattern_array[$j]}_temp1.txt \> Pattern${OUTPUT}_${pattern_array[$j]}_temp.txt
-        cat Pattern${OUTPUT}_${pattern_array[$j]}_temp1.txt > Pattern${OUTPUT}_${pattern_array[$j]}_temp.txt
-        echo head Pattern${OUTPUT}_${pattern_array[$j]}_temp.txt
-        head Pattern${OUTPUT}_${pattern_array[$j]}_temp.txt
-        printf "\n"
-
-        test -f Pattern${OUTPUT}_${pattern_array[$j]}_temp1.txt && echo rm Pattern${OUTPUT}_${pattern_array[$j]}_temp1.txt && printf "\n"
-        test -f Pattern${OUTPUT}_${pattern_array[$j]}_temp1.txt && rm Pattern${OUTPUT}_${pattern_array[$j]}_temp1.txt
-
-        test -f overlap${OUTPUT}_${pattern_array[$j]}.txt && echo rm overlap${OUTPUT}_${pattern_array[$j]}.txt && printf "\n"
-        test -f overlap${OUTPUT}_${pattern_array[$j]}.txt && rm overlap${OUTPUT}_${pattern_array[$j]}.txt
-
-        unset array_f
-      fi
-    done
     # Append to the list of found SNP patterns for each bar grouping.  First replace elements of the current pattern with approriate elements from the reference pattern based on the pattern with no bars
     pattern_length=${#pattern[@]}
     let pattern_length=$pattern_length-1
     old=$(echo "(\b${pattern[0]}\b)(?![A-Za-z0-9])([,]*)")
     new=${ref_pattern[0]}$(echo "x\$2")
-    # replace pattern integer, being not followed or trailed by integers, or by x, using negative lookahead ?! and word boundaries \b. The first captured group in the pattern integer, andt he second is the possibly trailing comma or space
+    # replace pattern integer, being not followed or trailed by integers or by x, using negative lookahead ?! and word boundaries \b. The first captured group in the pattern integer, and the second is the possibly trailing comma or space
     # https://www.regular-expressions.info/lookaround.html
     # https://www.rexegg.com/regex-boundaries.html
     str=$(echo "echo ${files_array[$j]##*_} | perl -pne 's/$old/$new/g'")
@@ -369,155 +322,152 @@ do
     done
     pattern_temp=$(echo $pattern_temp | perl -pne 's/x//g')
     echo Append to Pattern${OUTPUT}_${pattern_temp}.txt
-    echo cut \-f1 \--complement Pattern${OUTPUT}_${pattern_array[$j]}_temp.txt \>\> Pattern${OUTPUT}_${pattern_temp}.txt
-    cut -f1 --complement Pattern${OUTPUT}_${pattern_array[$j]}_temp.txt >> Pattern${OUTPUT}_${pattern_temp}.txt
+    echo cat Pattern${OUTPUT}_${pattern_array[$j]}.tmp \>\> Pattern${OUTPUT}_${pattern_temp}.txt
+    cat Pattern${OUTPUT}_${pattern_array[$j]}.tmp >> Pattern${OUTPUT}_${pattern_temp}.txt
     # https://stackoverflow.com/questions/32812916/how-to-delete-the-first-column-which-is-in-fact-row-names-from-a-data-file-in
     printf "\n"
 
-    test -f Pattern${OUTPUT}_${pattern_array[$j]}_temp.txt && echo rm Pattern${OUTPUT}_${pattern_array[$j]}_temp.txt && printf "\n"
-    test -f Pattern${OUTPUT}_${pattern_array[$j]}_temp.txt && rm Pattern${OUTPUT}_${pattern_array[$j]}_temp.txt
+    test -f Pattern${OUTPUT}_${pattern_array[$j]}.tmp && echo rm Pattern${OUTPUT}_${pattern_array[$j]}.tmp || printf ""
+    test -f Pattern${OUTPUT}_${pattern_array[$j]}.tmp && rm Pattern${OUTPUT}_${pattern_array[$j]}.tmp && printf "\n" || printf ""
 
     unset pattern_temp
   done
 
   for file in snps*_${INDEX_NEW}_*.txt
   do
-    test -f $file && found+=1
-    test -f $file && echo rm $file
-    test -f $file && rm $file
+    test -f $file && found+=1 || printf ""
+    test -f $file && echo rm $file || printf ""
+    test -f $file && rm $file || printf ""
   done
-  test ! -z $found && (( $found>0 )) && found=0 && printf "\n"
+  test ! -z $found && (( $found>0 )) && found=0 && printf "\n" || printf ""
 done
 
 # replace pattern files with unique rows (columns 2,3,..) and their counts (1)
-for file in Pattern${OUTPUT}*.txt
+
+for ((s=0;s<${#pattern_array[@]};s++))
 do
-  echo Totaling unique lines of $file:
-  nf=$(awk 'NR==1{ x=NF } NR>1{ if (NF > x) { x=NF } } END{ print x }' $file)
-  printf "\n"
-  if [ ! -z $nf ]
-  then
-    echo $nf field$( (($nf!=1)) && echo "s"|| echo "" ).
-    printf "\n"
-    # Arrange columns 2 to $nf in increasing order using asort() https://www.gnu.org/software/gawk/manual/html_node/Array-Sorting-Functions.html#Array-Sorting-Functions
-    str=$(echo "awk -F\"\t\" 'BEGIN{ OFS=FS } { split(")
-    for ((i=1; i<$nf; i++));
-    do
-      str=${str}$(echo "\$$i\"\t\"")
-    done
-    str=${str}$(echo "\$$nf,array,\"\t\"); asort(array); { print ")
-    for ((i=1; i<$nf; i++));
-    do
-      str=${str}$(echo "array[$i],")
-    done
-    str=${str}$(echo "array[$nf] } }' $file > ${file%.txt}_temp.txt ")
-    echo $str
-    eval "$str"
-    printf "\n"
-
-    echo \"Slide over\" fields to the right into empty fields to the left: # https://www.unix.com/shell-programming-and-scripting/221003-how-detect-empty-field-awk.html
-    echo awk \-F\"\\t\" \'BEGIN{ OFS=FS } { for \(i=1\; i\<NF\; i++\) { if \(\$i==\"\"\) { \$i=\$\(i+1\)\; \$\(i+1\)=\"\" } } } { print }\' ${file%.txt}_temp.txt \> $file
-    awk -F"\t" 'BEGIN{ OFS=FS } { for (i=1; i<NF; i++) { if ($i=="") { $i=$(i+1); $(i+1)="" } } } { print }' ${file%.txt}_temp.txt > $file
-    printf "\n"
-
-    echo Sort lines, print counts of unique lines in new field on the left:
-    echo cat $file \| sort \| uniq \-c \> ${file%.txt}_temp.txt
-    cat $file | sort | uniq -c > ${file%.txt}_temp.txt
-
-    let nf=$nf+1 # get maximum number of fields over all lines
-
-    echo Format output as tab-delimited:
-    str=$(echo "awk 'BEGIN{ OFS=\"\t\" } { print ")
-    for ((i=1; i<$nf; i++));
-    do
-      str=${str}$(echo "\$$i,")
-    done
-    str=${str}$(echo "\$$nf }' ${file%.txt}_temp.txt > $file")
-    echo $str
-    eval "$str"
-    printf "\n"
-
-    # permute columns of file if there are multiple bar groups
-    n_bar_groups=$(($(echo ${file##*_} | tr -c -d "+" | wc -c)+1)) #number of bar groups
-    if (($n_bar_groups>1))
+  for file in Pattern${OUTPUT}_${pattern_array[$s]}.txt
+  do
+    if [ -f $file ]
     then
-      echo $n_bar_groups bar group$((($n_bar_groups==1)) && echo "" || echo "s") in $file
+      echo Totaling unique lines of $file:
+      nf=$(awk 'NR==1{ x=NF } NR>1{ if (NF > x) { x=NF } } END{ print x }' $file)
       printf "\n"
-      # generate all permutations of the set {2,3,...,n_bar_groups+1}
-      echo Generate permutations of the bar groups:
-      str="2";
-      for ((k=3; k<=$((n_bar_groups+1)); k++))
-      do
-        str=${str}",$k"
-      done
-      str0=$str # original, unpermuted list of columns
-      str=$(perl -e "print '{$str},'x$n_bar_groups") # generate all $n_bar_groups-letter words on $n_bar_groups letters, with repeats
-      str="for perm in ${str%,*}; do echo \$perm; done;"
-      echo $str
-      perms_array=($(eval $str | sort | uniq))
-      declare -p perms_array
-      printf "\n"
+      if [ ! -z $nf ]
+      then
+        echo $nf field$( (($nf!=1)) && echo "s"|| echo "" ).
+        printf "\n"
+        # Arrange columns 2 to $nf in increasing order using asort() https://www.gnu.org/software/gawk/manual/html_node/Array-Sorting-Functions.html#Array-Sorting-Functions
+        str=$(echo "awk -F\"\t\" 'BEGIN{ OFS=FS } { split(")
+        for ((i=1; i<$nf; i++));
+        do
+          str=${str}$(echo "\$$i\"\t\"")
+        done
+        str=${str}$(echo "\$$nf,array,\"\t\"); asort(array); { print ")
+        for ((i=1; i<$nf; i++));
+        do
+          str=${str}$(echo "array[$i],")
+        done
+        str=${str}$(echo "array[$nf] } }' $file > ${file%.txt}.tmp ")
+        echo $str
+        eval "$str"
+        printf "\n"
 
-      echo Unpermuted file:
-      file0=${file%_*}.unpermuted_${file##*_} # unpermuted file
-      echo cat $file \> $file0
-      cat $file > $file0
-      printf "\n"
+        echo \"Slide over\" fields to the right into empty fields to the left: # https://www.unix.com/shell-programming-and-scripting/221003-how-detect-empty-field-awk.html
+        echo awk \-F\"\\t\" \'BEGIN{ OFS=\"\t\" } { for \(i=1\; i\<NF\; i++\) { if \(\$i==\"\"\) { \$i=\$\(i+1\)\; \$\(i+1\)=\"\" } } } { print }\' ${file%.txt}.tmp \> $file
+        awk -F"\t" 'BEGIN{ OFS="\t" } { for (i=1; i<NF; i++) { if ($i=="") { $i=$(i+1); $(i+1)="" } } } { print }' ${file%.txt}.tmp > $file
+        printf "\n"
 
-      for ((k=0; k<${#perms_array[@]}; k++))
-      do
-        # evaluate permuation if every element is unique
-        if [ ${perms_array[k]} != $str0 ] # skip the un-permuted case
+        echo Sort lines, print counts of unique lines in new field on the left:
+        echo awk \'BEGIN{OFS=\"\\t\"} {seen[\$0]+=1} END{for \(i in seen\) {print i,seen[i]} }\' $file \> ${file%.txt}.tmp
+        awk 'BEGIN{OFS="\t"} {seen[$0]+=1} END{for (i in seen) {print seen[i],i} }' $file > ${file%.txt}.tmp && printf "\n"
+        test -f ${file%.txt}.tmp && echo mv ${file%.txt}.tmp $file || printf ""
+        test -f ${file%.txt}.tmp && mv ${file%.txt}.tmp $file && printf "\n" || printf ""
+
+        let nf=$nf+1 # get maximum number of fields over all lines
+
+        # permute columns of file if there are multiple bar groups
+        n_bar_groups=$(($(echo ${file##*_} | tr -c -d "+" | wc -c)+1)) # number of bar groups
+        if (($n_bar_groups>1))
         then
-          echo Determine if permutation ${perms_array[k]} is acceptable:
-          str=$(echo "awk -F\"\t\" -v perm=${perms_array[k]} '{n=split(perm,cols,\",\"); idx=1; for (i=2;i<=n;i++) {for (j=1; j<i; j++) {if (cols[i]==cols[j]) {idx=0; break} } } } END{if (idx==1) {print \"1\"} else {print \"0\"}  }' $file0") # loop through permuted columns and check that they are distinct
+          echo $n_bar_groups bar group$((($n_bar_groups==1)) && echo "" || echo "s") in $file
+          printf "\n"
+          # generate all permutations of the set {2,3,...,n_bar_groups+1}
+          echo Generate permutations of the bar groups:
+          str="2";
+          for ((k=3; k<=$((n_bar_groups+1)); k++))
+          do
+            str=${str}",$k"
+          done
+          str0=$str # original, unpermuted list of columns
+          str=$(perl -e "print '{$str},'x$n_bar_groups") # generate all $n_bar_groups-letter words on $n_bar_groups letters, with repeats
+          str="for perm in ${str%,*}; do echo \$perm; done;"
           echo $str
-          use_perm=$(eval "$str")
+          perms_array=($(eval $str | sort | uniq))
+          declare -p perms_array
           printf "\n"
 
-          if (($use_perm==1));
-          then
-            echo Permute columns:
-            str=$(echo "awk -F\"\t\" -v perm=${perms_array[k]} 'BEGIN{OFS=FS} {n=split(perm,cols,\",\"); idx=1; for (i=2;i<=n;i++) {for (j=1; j<i; j++) {if (cols[i]==cols[j]) {idx=0; break} } } } {if (idx==1) {")
-            for ((j=1; j<=$n_bar_groups; j++))
-            do
-              str=${str}$(echo " col$j=cols[$j];") # store permuted columns in array as variables
-            done
-            str=${str}$(echo " print \$1")
-            for ((j=1; j<=$n_bar_groups; j++))
-            do
-              str=${str}$(echo ",\$col$j")
-            done
-            str=${str}$(echo " } }' $file0 > ${file%.txt}_temp.txt")
-            echo $str
-            eval "$str"
-            printf "\n"
+          echo Unpermuted file:
+          file0=${file%_*}.unpermuted_${file##*_} # unpermuted file
+          echo cat $file \> $file0
+          cat $file > $file0
+          printf "\n"
 
-            echo Append permutation \(${perms_array[k]}\) to $file
-            echo cat ${file%.txt}_temp.txt \>\> $file
-            cat ${file%.txt}_temp.txt >> $file
-            printf "\n"
-          fi
-          if [ -f ${file%.txt}_temp.txt ];
+          for ((k=0; k<${#perms_array[@]}; k++))
+          do
+            # evaluate permuation if every element is unique
+            if [ ${perms_array[k]} != $str0 ] # skip the un-permuted case
+            then
+              echo Determine if permutation ${perms_array[k]} is acceptable:
+              str=$(echo "awk -F\"\t\" -v perm=${perms_array[k]} '{n=split(perm,cols,\",\"); idx=1; for (i=2;i<=n;i++) {for (j=1; j<i; j++) {if (cols[i]==cols[j]) {idx=0; break} } } } END{if (idx==1) {print \"1\"} else {print \"0\"}  }' $file0") # loop through permuted columns and check that they are distinct
+              echo $str
+              use_perm=$(eval "$str")
+              printf "\n"
+
+              if (($use_perm==1));
+              then
+                echo Permute columns:
+                str=$(echo "awk -F\"\t\" -v perm=${perms_array[k]} 'BEGIN{OFS=FS} {n=split(perm,cols,\",\"); idx=1; for (i=2;i<=n;i++) {for (j=1; j<i; j++) {if (cols[i]==cols[j]) {idx=0; break} } } } {if (idx==1) {")
+                for ((j=1; j<=$n_bar_groups; j++))
+                do
+                  str=${str}$(echo " col$j=cols[$j];") # store permuted columns in array as variables
+                done
+                str=${str}$(echo " print \$1")
+                for ((j=1; j<=$n_bar_groups; j++))
+                do
+                  str=${str}$(echo ",\$col$j")
+                done
+                str=${str}$(echo " } }' $file0 > ${file%.txt}.tmp")
+                echo $str
+                eval "$str"
+                printf "\n"
+
+                echo Append permutation \(${perms_array[k]}\) to $file
+                echo cat ${file%.txt}.tmp \>\> $file
+                cat ${file%.txt}.tmp >> $file
+                printf "\n"
+              fi
+              if [ -f ${file%.txt}.tmp ];
+              then
+                echo rm ${file%.txt}.tmp
+                rm ${file%.txt}.tmp && printf "\n" || printf ""
+              fi
+            fi
+          done
+          if [ -f $file0 ] # remove unpermuted file
           then
-            echo rm ${file%.txt}_temp.txt
-            rm ${file%.txt}_temp.txt
+            echo rm $file0
+            rm $file0 && printf "\n" || printf ""
           fi
         fi
-      done
+      fi
+      # move output to output directory if not already in it
+      if [ "$PWD" != "$DIRECTORY" ];
+      then
+        echo Moving list of patterns to output directory:
+        test -f $file && echo mv $file ${DIRECTORY}/${file} || printf ""
+        test -f $file && mv $file ${DIRECTORY}/${file} && printf "\n" || printf ""
+      fi
     fi
-  fi
-  # move output to output directory if not already in it
-  if [ "$PWD" != "$DIRECTORY" ];
-  then
-    echo Moving list of patterns to output directory:
-    test -f $file && echo mv $file ${DIRECTORY}/${file} && printf "\n"
-    test -f $file && mv $file ${DIRECTORY}/${file}
-  fi
-
-  test -f ${file%.txt}_temp.txt && echo rm ${file%.txt}_temp.txt && printf "\n"
-  test -f ${file%.txt}_temp.txt && rm ${file%.txt}_temp.txt
+  done
 done
-
-test -f samples${OUTPUT}.sigma_${SIGMA}.txt && echo rm samples${OUTPUT}.sigma_${SIGMA}.txt && printf "\n"
-test -f samples${OUTPUT}.sigma_${SIGMA}.txt && rm samples${OUTPUT}.sigma_${SIGMA}.txt

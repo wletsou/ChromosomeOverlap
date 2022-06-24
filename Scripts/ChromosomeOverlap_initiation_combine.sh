@@ -29,12 +29,12 @@ for file in Pattern_combined${NAME}.${POPULATION}* # careful only to delete Patt
 do
   if [ -f $file ]
   then
-    test -f $file && found+=1 # counter whether any files have been removed
-    test -f $file && echo rm $file
-    test -f $file && rm $file
+    test -f $file && found+=1 || printf ""# counter whether any files have been removed
+    test -f $file && echo rm $file || printf ""
+    test -f $file && rm $file || printf ""
   fi
 done
-test ! -z $found && (( $found>0 )) && found=0 && printf "\n"
+test ! -z $found && (( $found>0 )) && found=0 && printf "\n" || printf ""
 
 if [ -z $COMBINE_GROUPS ]
 then
@@ -71,8 +71,7 @@ do
     if (($((i+1))==$n)); # smallest indexes possible
     then
       echo New reference pattern ${pattern_array[@]}
-      ref_pattern=("${pattern_array[@]}")
-      touch Pattern_combined${NAME}.${POPULATION}_${pattern%.txt}.tmp
+      ref_pattern=("${pattern_array[@]}") && printf "\n"
     fi
   done
 done
@@ -85,6 +84,7 @@ if (($COMBINE_GROUPS==1))
 then
   n_char=${#ref_pattern[@]}
   unset ref_group
+  unset f_name
   ref_groups=()
   for ((n_pluses=0;n_pluses<$n_char;n_pluses++)) # indicator of number of bars in pattern (one fewer than number of groups)
   do
@@ -109,12 +109,17 @@ then
           # https://serverfault.com/questions/197123/getting-the-last-match-in-a-file-using-grep
           ref_sum=$(($ref_sum+((${#pattern}-$(echo "+${ref_group}" | grep -aob "+" | grep -oP '^[0-9]+' | tail -1)))**2))
           echo Reference $((${n_pluses}+1))\-group pattern is $ref_group with total deviation $ref_sum.
+          f_name=Pattern_combined${NAME}.${POPULATION}_${ref_group}.tmp
+          test -f $f_name && echo rm $f_name || printf ""
+          test -f $f_name && rm $f_name || printf ""
+          echo touch $f_name
+          touch $f_name # initiate reference file
           printf "\n"
         fi
         position_sum=0 # after ref_group has been suggested and ref_sum defined
         for ((j=0;j<$((${#pattern_array[@]}-1));j++)) # loop through all numeric characters in pattern_array, excluding the last which is the letter "j"
         do
-          # square of difference between value and position of character ${ref_pattern[j]}
+          # square of difference between value and position of character in pattern
           # https://unix.stackexchange.com/questions/153339/how-to-find-a-position-of-a-character-using-grep/153342
           position_sum=$(($position_sum+((${pattern_array[j]}-$(echo $pattern | grep -aob "\b${pattern_array[$j]}\b" | grep -oP '^[0-9]+')-1))**2))
         done
@@ -126,6 +131,11 @@ then
           ref_group=$pattern
           ref_sum=$position_sum
           echo New reference $((${n_pluses}+1))\-group pattern is $ref_group with total deviation $ref_sum.
+          test -f $f_name && echo rm $f_name || printf ""
+          test -f $f_name && rm $f_name || printf "" # remove old reference file for the n_pluses + 1-group
+          f_name=Pattern_combined${NAME}.${POPULATION}_${ref_group}.tmp # new reference file
+          echo touch $f_name
+          touch $f_name
           printf "\n"
         fi
         unset pattern
@@ -134,6 +144,20 @@ then
     done
     ref_groups+=($ref_group)
     unset ref_group
+  done
+else # create refernce patterns for all possible bar groups
+  str="echo ${ref_pattern[0]}"
+  for ((i=1;i<${#ref_pattern[i]};i++))
+  do
+    str=${str}"{\",\",\"+\"}"
+  done
+  patterns_array=($(eval $str))
+  for pattern in ${patterns_array[@]}
+  do
+    test -f Pattern_combined${NAME}.${POPULATION}_${pattern}.tmp && echo rm Pattern_combined${NAME}.${POPULATION}_${pattern}.tmp || printf ""
+    test -f Pattern_combined${NAME}.${POPULATION}_${pattern}.tmp && rm Pattern_combined${NAME}.${POPULATION}_${pattern}.tmp || printf ""
+    echo touch Pattern_combined${NAME}.${POPULATION}_${pattern}.tmp
+    touch Pattern_combined${NAME}.${POPULATION}_${pattern}.tmp && printf "\n"
   done
 fi
 
@@ -147,7 +171,7 @@ do
   pattern=${pattern%.txt}
   echo ${pattern_array[@]}
   printf "\n"
-  for ((i=0;i<$n;i++))
+  for ((i=0;i<$n;i++)) # convert current pattern to reference pattern without changing the positions of the pluses
   do
     old=$(echo "(\b${pattern_array[i]}\b)(?![A-Za-z0-9])([,+]*)")
     new=${ref_pattern[i]}$(echo "x\$2")
@@ -159,23 +183,23 @@ do
   if (($COMBINE_GROUPS==1))
   then
     n_pluses=$(echo ${pattern%.txt} | tr -cd "+" | wc -c)
-    echo The ${n_pluses}\-group pattern $pattern belongs to reference group ${ref_groups[$n_pluses]}.
+    echo The $((n_pluses+1))\-group pattern $pattern belongs to reference group ${ref_groups[$n_pluses]}.
     pattern=${ref_groups[$n_pluses]}
     printf "\n"
   fi
 
   echo File ${file} becomes ${file%_*}_${pattern}.tmp. Add to Pattern_combined${NAME}.${POPULATION}_${pattern}.tmp  # remove shortest matching string from right (i.e. to right of *)
-  test -f ${file} && echo cp ${file} ${file%_*}_${pattern}.tmp && printf "\n"
-  test -f ${file} && cp ${file} ${file%_*}_${pattern}.tmp
+  test -f ${file} && echo cp ${file} ${file%_*}_${pattern}.tmp || printf ""
+  test -f ${file} && cp ${file} ${file%_*}_${pattern}.tmp && printf "\n" || printf ""
 
-  test -f ${file%_*}_${pattern}.tmp && echo cat ${file%_*}_${pattern}.tmp \>\> Pattern_combined${NAME}.${POPULATION}_${pattern}.tmp && printf "\n"
-  test -f ${file%_*}_${pattern}.tmp && cat ${file%_*}_${pattern}.tmp >> Pattern_combined${NAME}.${POPULATION}_${pattern}.tmp
+  test -f ${file%_*}_${pattern}.tmp && echo cat ${file%_*}_${pattern}.tmp \>\> Pattern_combined${NAME}.${POPULATION}_${pattern}.tmp  || printf ""
+  test -f ${file%_*}_${pattern}.tmp && cat ${file%_*}_${pattern}.tmp >> Pattern_combined${NAME}.${POPULATION}_${pattern}.tmp && printf "\n" || printf ""
 
-  test -f ${file%_*}_${pattern}.tmp && echo rm ${file%_*}_${pattern}.tmp && printf "\n"
-  test -f ${file%_*}_${pattern}.tmp && rm ${file%_*}_${pattern}.tmp
+  test -f ${file%_*}_${pattern}.tmp && echo rm ${file%_*}_${pattern}.tmp || printf ""
+  test -f ${file%_*}_${pattern}.tmp && rm ${file%_*}_${pattern}.tmp && printf "\n" || printf ""
 
-  test -f $file && echo rm $file
-  test -f $file && rm $file && printf "\n"
+  test -f $file && echo rm $file || printf ""
+  test -f $file && rm $file && printf "\n" || printf ""
 done
 
 # sum the first field for all unique occurences of fields 2 to 2 + $n_groups - 1
@@ -219,21 +243,21 @@ for file in Pattern_combined${NAME}.${POPULATION}*unsorted.txt ];
 do
   if [ -f $file ]
   then
-    test -f $file && found+=1
-    test -f $file && echo rm $file
-    test -f $file && rm $file
+    test -f $file && found+=1 || printf ""
+    test -f $file && echo rm $file || printf ""
+    test -f $file && rm $file || printf ""
   fi
 done
-test ! -z $found && (( $found>0 )) && found=0 && printf "\n"
+test ! -z $found && (( $found>0 )) && found=0 && printf "\n" || printf ""
 
 #remove temporary unique file
 for file in Pattern_combined${NAME}.${POPULATION}*tmp ];
 do
   if [ -f $file ]
   then
-    test -f $file && found+=1
-    test -f $file && echo rm $file
-    test -f $file && rm $file
+    test -f $file && found+=1 || printf ""
+    test -f $file && echo rm $file || printf ""
+    test -f $file && rm $file || printf ""
   fi
 done
-test ! -z $found && (( $found>0 )) && found=0 && printf "\n"
+test ! -z $found && (( $found>0 )) && found=0 && printf "\n" || printf ""

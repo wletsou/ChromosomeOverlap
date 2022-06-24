@@ -3,7 +3,7 @@ set -e
 
 # Iteratively overlaps the patterns in Pattern_combined.Iteration000.NAME_PATTERN.txt until all patterns have disappeared
 
-# sh HOME_DIR/ChromosomeOverlap_iteration_sub.sh chr11.69231642-69431642 2 2,j "50" "DIRECTORY" "HOME_DIR"
+# sh HOME_DIR/ChromosomeOverlap_iteration_sub_parallel.sh chr11.69231642-69431642 2 2,j "50" "DIRECTORY" "HOME_DIR"
 
 NAME=$1 # optional identifier in Pattern_combined file
 SIGMA=$2 # number of patterns to be overlapped in one comparison job
@@ -150,7 +150,7 @@ while (( $N_JOBS > $MAX_JOBS ))
 do
   DELTA=$((2*DELTA))
   N_JOBS=$(awk 'BEGIN{printf "%0.25f\n",'$N_OVERLAPS'/'$DELTA'}' | awk '{if ($1 != int($1)) {$1=int(($1))+1} {printf "%.0f\n",$1}  }')
-  echo Revised number of jobs is $N_JOBS with DELTA = $DELTA haplotype$( (($DELTA>1)) && echo "s" || echo "" ) per job.
+  echo Revised number of jobs is $N_JOBS with DELTA = $DELTA pattern$( (($DELTA>1)) && echo "s" || echo "" ) per job.
 done
 printf "\n"
 
@@ -180,19 +180,39 @@ do
     echo Transpose Patterns_combined file: # used by pattern_overlap_loop5.sh
     TRANSPOSE_FILE=${file%.*}.transpose.${file##*.}
     echo awk \'BEGIN{OFS=\"\\t\"}\; {for\(j=1\;j\<=NF\;j++\) {a[NR,j]=\$j\; n_rows=NR\; n_cols=\(n_cols\<NF?NF:n_cols\)} } END{for \(j=1\;j\<=n_cols\;j++\) {for \(i=1\;i\<=n_rows\;i++\) {printf \"%s%s\",a[i,j],\(i==n_rows?\"\\n\":\"\\t\"\)} } }\' $file \> $TRANSPOSE_FILE
-    awk 'BEGIN{OFS="\t"}; {for(j=1;j<=NF;j++) {a[NR,j]=$j; n_rows=NR; n_cols=(n_cols<NF?NF:n_cols)} } END{for (j=1;j<=n_cols;j++) {for (i=1;i<=n_rows;i++) {printf "%s%s",a[i,j],(i==n_rows?"\n":"\t")} } }' $file > $TRANSPOSE_FILE # transpose to counts in first row, snp patterns by bar groups in subsequent rows
+    awk 'BEGIN{OFS="\t"}; {for(j=1;j<=NF;j++) {a[NR,j]=$j; n_rows=NR; n_cols=(n_cols<NF?NF:n_cols)} } END{for (j=1;j<=n_cols;j++) {for (i=1;i<=n_rows;i++) {printf "%s%s",a[i,j],(i==n_rows?"\n":"\t")} } }' $file > $TRANSPOSE_FILE && printf "\n" # transpose to counts in first row, snp patterns by bar groups in subsequent rows
   done
 
   for file in ${SUBDIR}/Pattern_combined.${file_str}*${NAME}*${PATTERN}.txt
   do
-    # or submit jobs sequentially
-    for ((i=1;i<=$N_JOBS;i++))
-    do
-      echo sh ${HOME_DIR}ChromosomeOverlap_iteration.sh ${SUBDIR}/${file##*/} ${DELTA}.$i 1000000 $SIGMA $ITERATION $DIRECTORY $HOME_DIR
-      sh ${HOME_DIR}ChromosomeOverlap_iteration.sh ${SUBDIR}/${file##*/} ${DELTA}.$i 1000000 $SIGMA $ITERATION $DIRECTORY $HOME_DIR && printf "\n"
-    done
+    echo bsub \-P SJLIFE \-J \"myJob[1-$N_JOBS]\" \-eo ${SUBDIR}/ChromosomeOverlap_iteration.${file##*/}.%I.err \-oo ${SUBDIR}/ChromosomeOverlap_iteration.${file##*/}.%I.out \-R \"rusage[mem=5000]\" \-R \"status==\'ok\'\" \-R \"select[ut \< 0.8]\" \-R \"order[!ut]\" \"sh ${HOME_DIR}ChromosomeOverlap_iteration.sh ${SUBDIR}/${file##*/} ${DELTA}.\$LSB_JOBINDEX 2500000 $SIGMA $ITERATION $DIRECTORY $HOME_DIR\"
+    job_id=$(bsub -P SJLIFE -J "myJob[1-$N_JOBS]" -eo ${SUBDIR}/ChromosomeOverlap_iteration.${file##*/}.%I.err -oo ${SUBDIR}/ChromosomeOverlap_iteration.${file##*/}.%I.out -R "rusage[mem=5000]" -R "status=='ok'" -R "select[ut < 0.8]" -R "order[!ut]" "sh ${HOME_DIR}ChromosomeOverlap_iteration.sh ${SUBDIR}/${file##*/} ${DELTA}.\$LSB_JOBINDEX 2500000 $SIGMA $ITERATION $DIRECTORY $HOME_DIR")
+    echo $job_id && printf "\n"
+    job_id=$(echo $job_id | awk 'b=gensub(/.*<([0-9]*)>.*/,"\\1","g",$0) {print b}') #extract job_id (number) from output
 
   done
+
+  echo Wait until all jobs start:
+  echo bsub \-P SJLIFE \-J sleep.ChromosomeOverlap_iteration.${file_str_next} \-w \"numrun\($job_id,*\) \|\| numended\($job_id,*\)\" \-R \"rusage[mem=32]\" \-R \"status==\'ok\'\" \-oo ${DIRECTORY}/sleep.ChromosomeOverlap_iteration.${file_str_next}.out \-eo ${DIRECTORY}/sleep.ChromosomeOverlap_iteration.${file_str_next}.err \-K \"sleep 10\"
+  bsub -P SJLIFE -J sleep.ChromosomeOverlap_iteration.${file_str_next} -w "numrun($job_id,*) || numended($job_id,*)" -R "rusage[mem=32]" -R "status=='ok'" -oo ${DIRECTORY}/sleep.ChromosomeOverlap_iteration.${file_str_next}.out -eo ${DIRECTORY}/sleep.ChromosomeOverlap_iteration.${file_str_next}.err -K "sleep 10"
+  printf "\n"
+
+  echo Wait until all jobs done:
+  job_array=($(bjobs 2> /dev/null | awk '($7 ~ /myJob/){print $7} ($6 ~ /myJob/){print $6}')) # get job name from 7th field (or 6th if no exectution host yet) in all non-header rows of bjobs
+  declare -p job_array
+  while (( ${#job_array[@]}>0 ))
+  do
+    sleep 20
+    job_array=($(bjobs 2> /dev/null | awk '($7 ~ /myJob/){print $7} ($6 ~ /myJob/){print $6}'))
+  done
+  printf "\n"
+
+  str=$(echo "bsub -P SJLIFE -J sleep.${file_str_next} -R \"rusage[mem=32]\" -R \"status=='ok'\" -eo ${SUBDIR}/sleep.err -oo ${SUBDIR}/sleep.out -K \"sleep 10\"")
+  printf "\n"
+  echo $str
+  eval $str
+  printf "\n"
+
   echo cd $DIRECTORY
   cd $DIRECTORY && printf "\n"
 
@@ -227,8 +247,9 @@ do
   printf "\n"
 
   # Combine patterns from differnt jobs and move to DIRECTORY as new Pattern_combined file
-  echo ${HOME_DIR}ChromosomeOverlap_iteration_combine.sh ${NAME} $file_str_next \"$PATTERN\" $DIRECTORY
-  sh ${HOME_DIR}ChromosomeOverlap_iteration_combine.sh ${NAME} $file_str_next "$PATTERN" $DIRECTORY
+  str=$(echo "bsub -P SJLIFE -J ChromosomeOverlap_iteration_combine.${NAME}.${file_str_next} -R \"rusage[mem=1024]\" -R \"status=='ok'\" -oo combine.${NAME}.${file_str_next}.out -eo combine.${NAME}.${file_str_next}.err -K \"${HOME_DIR}ChromosomeOverlap_iteration_combine.sh ${NAME} $file_str_next "$PATTERN" $DIRECTORY\"" )
+  echo $str
+  eval $str
   printf "\n"
 
   # get updated number of jobs
@@ -275,11 +296,6 @@ do
       (( $n > $N_OVERLAPS )) && N_OVERLAPS=$n
     done
   done
-
-  echo Remove subdirectories:
-  test -d $SUBDIR && echo rm -r $SUBDIR
-  test -d $SUBDIR && rm -r $SUBDIR || echo No directories removed.
-  printf "\n"
 
   test -f $TRANSPOSE_FILE && echo rm $TRANSPOSE_FILE || printf ""
   test -f $TRANSPOSE_FILE && rm $TRANSPOSE_FILE && printf "\n" || printf ""
