@@ -50,7 +50,6 @@ let n_tuples=($num/$den)
 echo Number of operations to be performed is $n_tuples.
 printf "\n"
 
-MAX_JOBS=$(cat "/hpcf/lsf/lsf_prod/conf/lsbatch/hpcf_research_cluster/configdir/lsb.users" | grep "#wletsou" | awk '{print $2}')
 if [ -z $MAX_JOBS ]
 then
   MAX_JOBS=100 # revised limit

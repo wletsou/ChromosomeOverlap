@@ -1,9 +1,9 @@
 #! /bin/bash
 set -e
 
-# awk '{seen[$NF]; next} END{for (i in seen) {print i} }' Pattern_combined.Iteration*.ccss-ori.ALL_cases.chr12.49281369-49761651_2,j.txt > Pattern_combined_all.Iteration000-004.ccss-ori.ALL_cases.chr12.49281369-49761651_2,j.txt
+# Submits groups of $DELTA haplotypes in the $HAPLOTYPES file to ChromosomeOverlap_haplotype_count.sh and ChromosomeOverlap_fisher_exact.R to evaluate p-values for thesegregation between cases and controls
 
-# bsub -P SJLIFE -J ChromosomeOverlap_haplotype_count_sub -oo ChromosomeOverlap_haplotype_count_sub.out -eo ChromosomeOverlap_haplotype_count_sub.err -R "rusage[mem=256]" "sh /home/wletsou/scripts/ChromosomeOverlap_haplotype_count_sub.sh haplotype_estimates.ccss-ori.ALL_cases.chr12.49281369-49761651.txt,haplotype_estimates.ccss-ori.ALL_controls.chr12.49281369-49761651.txt Pattern_combined.Iteration000.chr12.49281369-49761651_2,j.txt 50 \"\" \"Iteration000.chr12.49281369-49761651\" /scratch_space/wletsou/sjlife/GWAS/CCS_chr12.2 /home/wletsou/scripts"
+# sh HOME_DIR/ChromosomeOverlap_haplotype_count_sub.sh cases_haplotypes,controls_haplotypes Pattern_combined.Iteration000.NAME.2,j.txt 50 "" "Iteration000.NAME" DIRECTORY HOME_DIR
 
 POPULATION=$1 # comma-separated list of case,control haplotype_estimates files
 HAPLOTYPES=$2 # haplotype frequency with name in last column and optional iteration in first
