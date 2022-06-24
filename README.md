@@ -222,7 +222,7 @@ sh HOME_DIR/ChromosomeOverlap_initiation_bsub.sh transpose_file 1 "NAME" "50" "D
 </code>
 </pre>
 
-<p>where the fourth input "50" is the initial step size, being th enumber of overlpas to run in one job.  Depending on the number of tuples of fixed chromosomes, the initial step size will be multipled by 2 until the total number of jobs does not exceed 100.  This submission script will run <kbd>ChromosomeOverlap_initiation_sub.sh</kbd>, <kbd>ChromosomeOverlap_initiation.sh</kbd>, and <kbd>ChromosomeOverlap_initiation_combine.sh</kbd>.</p>
+<p>Here the fourth input "50" is the initial step size, being the number of overlaps to run in one job.  Depending on the number of tuples of fixed chromosomes, the initial step size will be multipled by 2 until the total number of jobs does not exceed 100.  This submission script will run <kbd>ChromosomeOverlap_initiation_sub.sh</kbd>, <kbd>ChromosomeOverlap_initiation.sh</kbd>, and <kbd>ChromosomeOverlap_initiation_combine.sh</kbd>.</p>
 
 <p>After the initiation step, Fisher's exact test <i>p</i>-values can be computed by running or submitting</p>
 
@@ -232,12 +232,10 @@ sh HOME_DIR/ChromosomeOverlap_haplotype_count_sub.sh cases_haplotypes,controls_h
 </code>
 </pre>
 
-<p>This script gets counts of the haplotype patterns in <kbd>Pattern_combined.Iteration000.NAME.2,j.txt</kbd> in each of <kbd>cases_haplotypes</kbd> and <kbd>controls_haplotypes</kbd> using <kbd>ChromosomeOverlap_haplotype_count.R</kbd> in groups of 50 or more haplotypes per job (such that the total number of jobs does not exceed 100).  The raw counts are then fed into <kbd>ChromosomeOverlap_fisher_exact.R</kbd> to get the <i>p</i>-values and then combined into a single file called <kbd>fisher_exact.Iteration000.NAME.patterns_0000-XXXX.txt</kbd> containing <var>XXXX+1</var> haplotypes which can then be used for filtering.  The bsub script loads and R module in order to run the <kbd>Rscript</kbd> command, a process which may not work on all systems; in this case you will need to run the command manually.</p>
+<p>This script gets counts of the haplotype patterns in <kbd>Pattern_combined.Iteration000.NAME.2,j.txt</kbd> in each of <kbd>cases_haplotypes</kbd> and <kbd>controls_haplotypes</kbd> using <kbd>ChromosomeOverlap_haplotype_count.R</kbd> in groups of 50 (or more) haplotypes per job (such that the total number of jobs does not exceed 100).  The raw counts are then fed into <kbd>ChromosomeOverlap_fisher_exact.R</kbd> to get the <i>p</i>-values, which are then combined into a single file called <kbd>fisher_exact.Iteration000.NAME.patterns_0000-XXXX.txt</kbd> containing <var>XXXX+1</var> to be used for filtering.  The bsub script loads and R module in order to run the <kbd>Rscript</kbd> command, a process which may not work on all systems; in this case you will need to run the command manually.</p>
 
 <p>After filtering, the iteration step is almost exactly the same as before.  Run or submit</p>
 
-<pre>
-<code>
 <pre>
 <code>
 sh HOME_DIR/ChromosomeOverlap_iteration_sub_parallel.sh NAME 2 2,j "50" "DIRECTORY" HOME_DIR
