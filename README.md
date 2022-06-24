@@ -150,23 +150,23 @@ sh HOME_DIR/ChromosomeOverlap_initiation_combine.sh NAME 1 "Iteration000"
  
  <pre>
  <code>
- sh ChromosomeOverlap_haplotype_count.sh cases_haplotypes,controls_haplotypes Pattern_combined.Iteration000.NAME.2,j.txt "" "" NAME
+ sh ChromosomeOverlap_haplotype_count.sh cases_haplotypes,controls_haplotypes Pattern_combined.Iteration000.NAME.2,j.txt "" "" Iteration000.NAME
  </code>
  </pre>
  
- <p>creates a file called <kbd>haplotype_segregation.NAME.patterns_0000-XXXX.txt</kbd> with the meta-chromosome in the first column, the number <var>a</var> of case chromosomes with the pattern, the number <var>b</var> of case chromosomes without the pattern, the number <var>c</var> of controls chromosomes with the pattern, and the number <var>d</var> of controls chromosomes without the pattern.  The skipped inputs are for (i) specifying a range of haplotypes to evaluate, so that the work can be split up across different cores, and (ii) selecting only patterns that appeared at a certain iteration (see below).</p>
+ <p>creates a file called <kbd>haplotype_segregation.Iteration000.NAME.patterns_0000-XXXX.txt</kbd> with the meta-chromosome in the first column, the number <var>a</var> of case chromosomes with the pattern, the number <var>b</var> of case chromosomes without the pattern, the number <var>c</var> of controls chromosomes with the pattern, and the number <var>d</var> of controls chromosomes without the pattern.  The skipped inputs are for (i) specifying a range of haplotypes to evaluate, so that the work can be split up across different cores, and (ii) selecting only patterns that appeared at a certain iteration (see below).</p>
  
  <p>The data in this file are sufficient to run Fisher's exact test in R:</p>
  
  <pre>
  <code>
- Rscript ChromosomeOverlap_fisher_exact.R -f haplotype_segregation.NAME.patterns_0000-XXXX.txt -o NAME
+ Rscript ChromosomeOverlap_fisher_exact.R -f haplotype_segregation.Iteration000.NAME.patterns_0000-XXXX.txt -o NAME
  </code>
  </pre>
  
- <p>creates a file <kbd>fisher_exact.NAME.txt</kbd> in your directory with pattern name, cases frequency, controls frequency, odds ratio, and p-value for all XXXX+1 patterns.</p>
+ <p>creates a file <kbd>fisher_exact.Iteration000.NAME.patterns_0000-XXXX.txt</kbd> in your directory with pattern name, cases frequency, controls frequency, odds ratio, and p-value for all XXXX+1 patterns.</p>
  
- <p>It is then a simple matter to filter patterns in <kbd>Pattern_combined.Iteration000.NAME.2,j.txt</kbd> for use in the overlap iterations.  A good strategy is to rename the <kbd>Pattern_combined.Iteration000.NAME.2,j.txt</kbd> to <kbd>Pattern_combined_<b>old</b>.Iteration000.NAME.2,j.txt</kbd> with</p>
+ <p>It is then a simple matter to filter patterns in <kbd>Pattern_combined.Iteration000.NAME.2,j.txt</kbd> for use in the overlap iterations.  A good strategy is to rename the <kbd>Pattern_combined.Iteration000.NAME.2,j.txt</kbd> file <kbd>Pattern_combined_<b>old</b>.Iteration000.NAME.2,j.txt</kbd> with</p>
  
  <pre>
  <code>
@@ -212,4 +212,36 @@ sh HOME_DIR/ChromosomeOverlap_iteration.sh Pattern_combined.Iteration00X.NAME.tx
 
 <h2>A note on parallelization</h2>
 
-This version of Chromosome Overlap does not support full parallelization, because not all users may have access to an HPC environment.  When an HPC cluster is available, the <kbd>_sub</kbd> jobs can be modified to submit the overlap jobs <kbd>ChromosomeOverlap_initiaion.sh</kbd> and <kbd>ChromosomeOverlap_interation.sh</kbd> in parallel.  For example, IBM Spectrum LSF allows users to submit an array of jobs indexed by a er called <kbd>$LSB_JOBINDEX</kbd>.  Each of the overlap functions takes a parameter RANGE which is of the form <kbd>STEP_SIZE.STEP_NO</kbd>.  By picking a suitable <kbd>STEP_SIZE</kbd> (often determined by the number of jobs you can run at once), each job evaluates a different <kbd>STEP_NO</kbd>.  The outputs of the different jobs are combined by the functions <kbd>ChromosomeOverlap_initiaion_combine.sh</kbd> and <kbd>ChromosomeOverlap_interation_combine.sh</kbd>, so the only additional programming needed is the initiation of the job array.
+<p>When an HPC cluster is available, the <kbd>_sub</kbd> jobs can be modified to submit the jobs <kbd>ChromosomeOverlap_initiaion.sh</kbd>, <kbd>ChromosomeOverlap_haplotype_count.sh</kbd>, and <kbd>ChromosomeOverlap_interation.sh</kbd> in parallel.  LSF allows users to submit an array of jobs indexed by a parameter called <kbd>$LSB_JOBINDEX</kbd>.  Each of the three functions takes a parameter <kbd>RANGE</kbd> which is of the form <kbd>STEP_SIZE.STEP_NO</kbd>.  By picking a suitable <kbd>STEP_SIZE</kbd> (determined by the number of jobs you can run at once), each job evaluates a different <kbd>STEP_NO</kbd>.  The outputs of the different jobs are combined by the functions <kbd>ChromosomeOverlap_initiaion_combine.sh</kbd> and <kbd>ChromosomeOverlap_interation_combine.sh</kbd>, so the only additional programming needed is the initiation of the job array.</p>
+
+<p>Three functions are supplied for users with access to LSF.  To initiate the overlap process, run (or submit using <kbd>bsub</kbd>)</p>
+
+<pre>
+<code>
+sh HOME_DIR/ChromosomeOverlap_initiation_bsub.sh transpose_file 1 "NAME" "50" "DIRECTORY" "HOME_DIR"
+</code>
+</pre>
+
+<p>where the fourth input "50" is the initial step size, being th enumber of overlpas to run in one job.  Depending on the number of tuples of fixed chromosomes, the initial step size will be multipled by 2 until the total number of jobs does not exceed 100.  This submission script will run <kbd>ChromosomeOverlap_initiation_sub.sh</kbd>, <kbd>ChromosomeOverlap_initiation.sh</kbd>, and <kbd>ChromosomeOverlap_initiation_combine.sh</kbd>.</p>
+
+<p>After the initiation step, Fisher's exact test <i>p</i>-values can be computed by running or submitting</p>
+
+<pre>
+<code>
+sh HOME_DIR/ChromosomeOverlap_haplotype_count_sub.sh cases_haplotypes,controls_haplotypes Pattern_combined.Iteration000.NAME.2,j.txt 50 "" "Iteration000.NAME" DIRECTORY HOME_DIR
+</code>
+</pre>
+
+<p>This script gets counts of the haplotype patterns in <kbd>Pattern_combined.Iteration000.NAME.2,j.txt</kbd> in each of <kbd>cases_haplotypes</kbd> and <kbd>controls_haplotypes</kbd> using <kbd>ChromosomeOverlap_haplotype_count.R</kbd> in groups of 50 or more haplotypes per job (such that the total number of jobs does not exceed 100).  The raw counts are then fed into <kbd>ChromosomeOverlap_fisher_exact.R</kbd> to get the <i>p</i>-values and then combined into a single file called <kbd>fisher_exact.Iteration000.NAME.patterns_0000-XXXX.txt</kbd> containing <var>XXXX+1</var> haplotypes which can then be used for filtering.  The bsub script loads and R module in order to run the <kbd>Rscript</kbd> command, a process which may not work on all systems; in this case you will need to run the command manually.</p>
+
+<p>After filtering, the iteration step is almost exactly the same as before.  Run or submit</p>
+
+<pre>
+<code>
+<pre>
+<code>
+sh HOME_DIR/ChromosomeOverlap_iteration_sub_parallel.sh NAME 2 2,j "50" "DIRECTORY" HOME_DIR
+</code>
+</pre>
+
+<p>This script performs the same steps as <kbd>ChromosomeOverlap_iteration_sub.sh</kbd>, except that the calls to <kbd>ChromosomeOverlap_iteration.sh</kbd> are submitted as a job array.  Again, the number over <var>&sigma;</var>-tuples of meta-chromosomes submitted per jobs is initiallized at 50 and incremented until the total number of jobs does not exceed 100.  With parallelization it is possible to submit a file of several hundred thousand meta-chromosomes on ~100-200 total SNPs.</p>
