@@ -83,16 +83,20 @@ do
     str=${str}$(echo ",\$$k")
   done
   SORT="TRUE" # whether to sort output by pattern
+  SORT="FALSE" # whether to sort output by pattern
   if [ $SORT == "TRUE" ];
   then
     sort_str="unsorted."
   else
     sort_str=""
   fi
-  str=${str}$(echo ")]+=\$1 } END{ for (row in array) { print array[row],row } }' ${DIRECTORY}/Pattern_combined.${ITERATION}.$( [ -z $NAME ] && echo "" || echo "${NAME}_")${pattern_array[i]}.txt > ${DIRECTORY}/Pattern_combined.${ITERATION}.$( [ -z $NAME ] && echo "" || echo "${NAME}_")${pattern_array[i]}.${sort_str}txt ")
+  str=${str}$(echo ")]+=\$1 } END{ for (row in array) { print array[row],row } }' ${DIRECTORY}/Pattern_combined.${ITERATION}.$( [ -z $NAME ] && echo "" || echo "${NAME}_")${pattern_array[i]}.txt > ${DIRECTORY}/Pattern_combined.${ITERATION}.$( [ -z $NAME ] && echo "" || echo "${NAME}_")${pattern_array[i]}.${sort_str}tmp ")
   echo $str
   eval "$str"
   printf "\n"
+
+  test -f ${DIRECTORY}/Pattern_combined.${ITERATION}.$( [ -z $NAME ] && echo "" || echo "${NAME}_")${pattern_array[i]}.${sort_str}tmp && echo mv ${DIRECTORY}/Pattern_combined.${ITERATION}.$( [ -z $NAME ] && echo "" || echo "${NAME}_")${pattern_array[i]}.${sort_str}tmp ${DIRECTORY}/Pattern_combined.${ITERATION}.$( [ -z $NAME ] && echo "" || echo "${NAME}_")${pattern_array[i]}.${sort_str}txt
+  test -f ${DIRECTORY}/Pattern_combined.${ITERATION}.$( [ -z $NAME ] && echo "" || echo "${NAME}_")${pattern_array[i]}.${sort_str}tmp && mv ${DIRECTORY}/Pattern_combined.${ITERATION}.$( [ -z $NAME ] && echo "" || echo "${NAME}_")${pattern_array[i]}.${sort_str}tmp ${DIRECTORY}/Pattern_combined.${ITERATION}.$( [ -z $NAME ] && echo "" || echo "${NAME}_")${pattern_array[i]}.${sort_str}txt && printf "\n"
 
 
   if [ $SORT == "TRUE" ];
@@ -101,17 +105,17 @@ do
     then
       sort -k2 Pattern_combined.${ITERATION}.$( [ -z $NAME ] && echo "" || echo "${NAME}_")${pattern_array[i]}.${sort_str}txt > Pattern_combined.${ITERATION}.$( [ -z $NAME ] && echo "" || echo "${NAME}_")${pattern_array[i]}.txt
     fi
-  fi
+    echo Output file Pattern_combined.${ITERATION}.$( [ -z $NAME ] && echo "" || echo "${NAME}_")${pattern_array[i]}.txt has $(awk '{total+=$1} END{print total}' Pattern_combined.${ITERATION}.$( [ -z $NAME ] && echo "" || echo "${NAME}_")${pattern_array[i]}.txt) entries in $(awk 'END{print NR}' Pattern_combined.${ITERATION}.$( [ -z $NAME ] && echo "" || echo "${NAME}_")${pattern_array[i]}.txt) lines after sorting.
 
-  echo Output file Pattern_combined.${ITERATION}.$( [ -z $NAME ] && echo "" || echo "${NAME}_")${pattern_array[i]}.txt has $(awk '{total+=$1} END{print total}' Pattern_combined.${ITERATION}.$( [ -z $NAME ] && echo "" || echo "${NAME}_")${pattern_array[i]}.txt) entries in $(awk 'END{print NR}' Pattern_combined.${ITERATION}.$( [ -z $NAME ] && echo "" || echo "${NAME}_")${pattern_array[i]}.txt) lines after sorting.
+    for file in Pattern_combined.${ITERATION}.${NAME}*${sort_str}txt
+    do
+      if [ -f $file ];
+      then
+        echo rm $file
+        rm $file
+      fi
+    done
+  fi
 done
 
 # remove unsorted combined file
-for file in Pattern_combined.${ITERATION}.${NAME}*${sort_str}txt
-do
-  if [ -f $file ];
-  then
-    echo rm $file
-    rm $file
-  fi
-done
