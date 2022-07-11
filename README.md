@@ -150,11 +150,11 @@ sh HOME_DIR/ChromosomeOverlap_initiation_combine.sh NAME 1 "Iteration000"
  
  <pre>
  <code>
- sh ChromosomeOverlap_haplotype_count.sh cases_haplotypes,controls_haplotypes Pattern_combined.Iteration000.NAME.2,j.txt "" "" Iteration000.NAME
+ sh ChromosomeOverlap_haplotype_count.v2.sh cases_haplotypes,controls_haplotypes Pattern_combined.Iteration000.NAME.2,j.txt "" Iteration000.NAME
  </code>
  </pre>
  
- <p>creates a file called <kbd>haplotype_segregation.Iteration000.NAME.patterns_0000-XXXX.txt</kbd> with the meta-chromosome in the first column, the number <var>a</var> of case chromosomes with the pattern, the number <var>b</var> of case chromosomes without the pattern, the number <var>c</var> of controls chromosomes with the pattern, and the number <var>d</var> of controls chromosomes without the pattern.  The skipped inputs are for (i) specifying a range of haplotypes to evaluate, so that the work can be split up across different cores, and (ii) selecting only patterns that appeared at a certain iteration (see below).</p>
+ <p>creates a file called <kbd>haplotype_segregation.Iteration000.NAME.patterns_0000-XXXX.txt</kbd> with the meta-chromosome in the first column, the number <var>a</var> of case chromosomes with the pattern, the number <var>b</var> of case chromosomes without the pattern, the number <var>c</var> of controls chromosomes with the pattern, and the number <var>d</var> of controls chromosomes without the pattern.  The skipped input is for specifying a range of haplotypes to evaluate, so that the work can be split up across different cores (see below).</p>
  
  <p>The data in this file are sufficient to run Fisher's exact test in R:</p>
  
@@ -228,11 +228,11 @@ sh HOME_DIR/ChromosomeOverlap_initiation_bsub.sh transpose_file 1 "NAME" "50" "D
 
 <pre>
 <code>
-sh HOME_DIR/ChromosomeOverlap_haplotype_count_sub.sh cases_haplotypes,controls_haplotypes Pattern_combined.Iteration000.NAME.2,j.txt 50 "" "Iteration000.NAME" DIRECTORY HOME_DIR
+sh HOME_DIR/ChromosomeOverlap_haplotype_count_sub.v2.sh cases_haplotypes,controls_haplotypes Pattern_combined.Iteration000.NAME.2,j.txt 50 "" "Iteration000.NAME" DIRECTORY HOME_DIR
 </code>
 </pre>
 
-<p>This script gets counts of the haplotype patterns in <kbd>Pattern_combined.Iteration000.NAME.2,j.txt</kbd> in each of <kbd>cases_haplotypes</kbd> and <kbd>controls_haplotypes</kbd> using <kbd>ChromosomeOverlap_haplotype_count.R</kbd> in groups of 50 (or more) haplotypes per job (such that the total number of jobs does not exceed 100).  The raw counts are then fed into <kbd>ChromosomeOverlap_fisher_exact.R</kbd> to get the <i>p</i>-values, which are then combined into a single file called <kbd>fisher_exact.Iteration000.NAME.patterns_0000-XXXX.txt</kbd> containing <var>XXXX+1</var> to be used for filtering.  The bsub script loads and R module in order to run the <kbd>Rscript</kbd> command, a process which may not work on all systems; in this case you will need to run the command manually.</p>
+<p>This script gets counts of the haplotype patterns in <kbd>Pattern_combined.Iteration000.NAME.2,j.txt</kbd> in each of <kbd>cases_haplotypes</kbd> and <kbd>controls_haplotypes</kbd> using <kbd>ChromosomeOverlap_haplotype_count.R</kbd> in groups of 50 (or more) haplotypes per job (such that the total number of jobs does not exceed 100).  The raw counts are then fed into <kbd>ChromosomeOverlap_fisher_exact.R</kbd> to get the <i>p</i>-values, which are then combined into a single file called <kbd>fisher_exact.Iteration000.NAME.patterns_0001-XXXX.txt</kbd> containing <var>XXXX</var> to be used for filtering.  The skipped input is to specify an iteration from which to select patterns for testing; the files <kbd>Closed_patterns_pre.NAME.stats</kbd> and <kbd>Closed_patterns_post.NAME.stats</kbd>, for example, which you generate during the iteration steps have iteration number in their first column to be filtered on.  The bsub script loads and R module in order to run the <kbd>Rscript</kbd> command, a process which may not work on all systems; in this case you will need to run the command manually on the <kbd>haplotype_segregation.NAME.pattern_YYYY-XXXX.txt</kbd> files (see above) and combine the results.</p>
 
 <p>After filtering, the iteration step is almost exactly the same as before.  Run or submit</p>
 
