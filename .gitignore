@@ -1,3 +1,5 @@
 *.txt
 *.bb
 *.bed
+*.gz
+*.gz.tbi
