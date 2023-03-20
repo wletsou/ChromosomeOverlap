@@ -73,7 +73,7 @@ Perform the initial overlap with at least 50 overlaps per job by running
 bsub -P ChromosomeOverlap -J ChromosomeOverlap_iteration_sub_parallel.v3.Iteration000 -oo ChromosomeOverlap_iteration_sub_parallel.v3.Iteration000.out -eo ChromosomeOverlap_iteration_sub_parallel.v3.Iteration000.err -R "rusage[mem=512]" "sh ChromosomeOverlap_iteration_sub_parallel.v3.sh \"${NAME}\" 2 \"${Pattern}\" 50 0"
 ```
 
-The overlaps are partioned to nodes using <kbd>index2combo2.R</kbd>, which assigns a unique number to each possible overlap of <kbd>$SIGMA</kbd> chromosomes.  Here, <kbd>50</kbd> indicates that the total number of overlaps per job should be 50, which value doubles until the total number of jobs required to complete all pairwise overlaps is below a threshold <kbd>MAX_JOBS</kbd>; <kbd>2</kbd> indicates that the overlaps should consist of two chromosomes each; and <kbd>0</kbd> indicates that no overlaps have been completed yet (corresponding to Iteration000).  The output of this step is a file <kbd>Pattern_combined.Iteration001.${NAME}_${PATTERN}.txt</kbd>, containing counts of meta-chromosomes and their corresponding SNP-alleles, and another file <kbd>Closed_patterns_stats.${NAME}_${PATTERN}.txt</kbd>, which keeps track of all the closed patterns found so far and the iteration at which they were discovered.  The program automatically halts at iteration 0 to allow the user to apply p-value-based filtering.
+The overlaps are partioned to nodes using <kbd>index2combo2.R</kbd>, which assigns a unique number to each possible overlap of <kbd>$SIGMA</kbd> chromosomes.  Here, <kbd>50</kbd> indicates that the total number of overlaps per job should be 50, which value doubles until the total number of jobs required to complete all pairwise overlaps is below a threshold <kbd>MAX_JOBS</kbd>; <kbd>2</kbd> indicates that the overlaps should consist of two chromosomes each; and <kbd>0</kbd> indicates that no overlaps have been completed yet (corresponding to Iteration000).  The output of this step is a file <kbd>Pattern_combined.Iteration001.${NAME}\_${PATTERN}.txt</kbd>, containing counts of meta-chromosomes and their corresponding SNP-alleles, and another file <kbd>Closed_patterns_stats.${NAME}_${PATTERN}.txt</kbd>, which keeps track of all the closed patterns found so far and the iteration at which they were discovered.  The program automatically halts at iteration 0 to allow the user to apply p-value-based filtering.
 
 ### Filtering ###
 
@@ -97,7 +97,7 @@ which selects risk-increasing patterns with p-values less than <kbd>1e-9</kbd>. 
 Pattern_combined_old.${NAME}_${PATTERN}.txt Pattern_combined.${NAME}_${PATTERN}.txt
 ```
 
-### Iterations ###
+### Iteration ###
 
 Once the filtered patterns are selected, run
 
