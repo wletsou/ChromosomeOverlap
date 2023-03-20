@@ -118,4 +118,4 @@ awk 'BEGIN{OFS="\t"} NR==FNR{seen[$2]; next} ($3 in seen || $1>1){print $0}' Pat
 
 ```
 
-on which <kbd>ChromosomeOverlap_iteration_sub_parallel.v3.sh</kbd> can be run.
+and run <kbd>ChromosomeOverlap_iteration_sub_parallel.v3.sh</kbd> on it.
