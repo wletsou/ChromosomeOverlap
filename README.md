@@ -63,9 +63,13 @@ where <kbd>${NAME}</kbd> is a location label (what chromosome and position do yo
   <td>1</td>
   <td>01_1,02_1,03_0,...</td>
 </tr>
+<tr>
+  <td>...</td>
+  <td>...</td>
+</tr>
 </table>
 
-Each meta-chromosome is a list of SNPs (column numbers in your haplotype file) and their corresponding alleles (0 or 1).
+Each meta-chromosome is a list of SNPs (indexed by their column numbers in your haplotype file) and their corresponding alleles (0 or 1).
 
 Perform the initial overlap with at least 50 overlaps per job by running
 
