@@ -1,6 +1,6 @@
 # Chromosome Overlap #
 
-This document outlines how to perform Chromosome Overlap in an HPC environment (LSF).  The goal is to obtain a list of closed haplotype patterns from (filtered meta-)chromosomes from a population.
+This document outlines how to perform Chromosome Overlap in an HPC environment (LSF).  The goal is to obtain a list of closed haplotype patterns from (filtered meta-)chromosomes from a population consisting of cases and controls.
 
 ### Initiation ###
 
@@ -44,7 +44,7 @@ Your input should be a file <kbd>haplotype_estimates.cases.${NAME}.txt</kbd> of 
   </tr>
  </table>
  
-Each row is chromosome from subject sid is the cases population; another file should exist for the controls.  Alternate alleles of SNP </kbd>rsid_Alt</kbd> are indicated with a 1 and reference alleles with a 0.
+Each row is chromosome from subject sid in the cases population; another file should exist for the controls.  Alternate alleles of SNP <kbd>rsid_Alt</kbd> are indicated with a 1 and reference alleles with a 0.
 
 Find all unique chromosomes in <kbd>haplotype_estimates.cases.${NAME}.txt</kbd> using
 
@@ -52,7 +52,7 @@ Find all unique chromosomes in <kbd>haplotype_estimates.cases.${NAME}.txt</kbd> 
 awk 'NR==1{char=length(NF-1)} NR>1{printf "1\t"; for (i=2;i<=NF;i++) {printf "%s%0"char"d_%s",(i>2?",":""),i-1,$i}; printf "\n"}' haplotype_estimates.cases.${NAME}.txt | awk 'BEGIN{OFS="\t"} {seen[$2]+=$1} END{for (i in seen) {print seen[i],i} }' > Pattern_combined.Iteration000.${NAME}_${PATTERN}.txt
 ```
 
-where <kbd>${NAME}</kbd> is a location label (what chromosome and position do your haplotypes come from?) and <kbd>${PATTERN}</kbd> is a suffix indicating the type of overlap (e.g., <kbd>2,j</kbd> indicates pairwise overlap of and <kbd>2,3,j</kbd> triple-wise).  These names will be used for combining the results of different jobs.  The output <kbd>Pattern_combined.Iteration000.${NAME}_${PATTERN}.txt</kbd> will be a two-column list of counts of meta-chromosomes:
+where <kbd>${NAME}</kbd> is a location label (what chromosome and position do your haplotypes come from?) and <kbd>${PATTERN}</kbd> is a suffix indicating the type of overlap (e.g., <kbd>2,j</kbd> indicates pairwise overlap of and <kbd>2,3,j</kbd> triple-wise).  These names will be used for combining the results of different jobs.  The output <kbd>Pattern_combined.Iteration000.${NAME}_${PATTERN}.txt</kbd> will be a two-column table of counts of meta-chromosomes:
 
 <table>
 <tr>
@@ -65,7 +65,7 @@ where <kbd>${NAME}</kbd> is a location label (what chromosome and position do yo
 </tr>
 </table>
 
-Each meta-chromosome is a list of SNPs (the coumn number in your haplotype file) and their corresponding alleles (0 or 1).
+Each meta-chromosome is a list of SNPs (column numbers in your haplotype file) and their corresponding alleles (0 or 1).
 
 Perform the initial overlap with at least 50 overlaps per job by running
 
@@ -105,7 +105,7 @@ Once the filtered patterns are selected, run
 bsub -P ChromosomeOverlap -J ChromosomeOverlap_iteration_sub_parallel.v3.Iteration001.${NAME} -oo ChromosomeOverlap_iteration_sub_parallel.v3.${NAME}.out -eo ChromosomeOverlap_iteration_sub_parallel.v3.Iteration001.${NAME}.err -R "rusage[mem=512]" "sh ChromosomeOverlap_iteration_sub_parallel.v3.sh \"${NAME}\" 2 \"${PATTERN}\" 50 1"
 ```
 
-to initiate the overlaps starting from iteration 1.  All new patterns discovered at each iteration will be added to <kbd>Closed_patterns_stats.${NAME}_${PATTERN}.txt</kbd>.  The program ceases when no new patterns are discovered.  The patterns can be assessed for association with disease using Fisher's exact test
+to initiate the overlaps starting from iteration 1.  All new patterns discovered at each iteration will be added to <kbd>Closed_patterns_stats.${NAME}_${PATTERN}.txt</kbd>.  The program ceases when no new patterns are discovered, typically after five iterations have been completed.  The patterns can be assessed for association with disease using Fisher's exact test
 
 ```
 bsub -P ChromosomeOverlap -J ChromosomeOverlap_haplotype_count_sub.v5.Iteration001-005 -oo ChromosomeOverlap_haplotype_count_sub.v5.Iteration001-005.out -eo ChromosomeOverlap_haplotype_count_sub.v5.Iteration001=005.err -R "rusage[mem=256]" "sh ChromosomeOverlap_haplotype_count_sub.v5.sh haplotype_estimates.cases.{NAME}.txt,haplotype_estimates.controls.${NAME}.txt Closed_patterns_stats.${NAME}_${PATTERN}.txt 50 \"\" \"Iteration001-005.${NAME}\""
