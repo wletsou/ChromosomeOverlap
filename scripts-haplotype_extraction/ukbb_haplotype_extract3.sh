@@ -1,15 +1,12 @@
 #! /bin/bash
 set -e
 
-# generate indiv files and compressed vcf files for discovery and replication populations
-# sh /home/wletsou/scripts/ukbb_topmed_merge.sh ukbb_snp_list.txt /research/projects/yasuigrp/EpiGenetics/common/yasuigrp_data/ProjHap/ukb.bca/topmed/chr11/chr11.qced.anno.info 11 129361171,129561171 /research/rgs01/project_space/yasuigrp/EpiGenetics/common/yasuigrp_data/ProjHap/ukb.bca/topmed/chr11
+# for extracting haplotypes from topmed-phased vcf files for UKBB and DRIVE at a common set of SNPs
 
-# sh /home/wletsou/scripts/dbgap_haplotype_merge.sh dbgap28544_cases,dbgap28544_controls "/research/projects/yasuigrp/EpiGenetics/common/yasuigrp_data/ProjHap/dbgap28544/topmed/for_william/dbgap28544.pheno.txt" "/research/projects/yasuigrp/EpiGenetics/common/yasuigrp_data/ProjHap/ukb.bca/topmed/chr11/chr11.qced.anno.info" ukbb_snp_list.txt 11 129361171,129561171 /research/projects/yasuigrp/EpiGenetics/common/yasuigrp_data/ProjHap/dbgap28544/topmed/topmedr2/cleaned/vcfs/dbgap28544.topmedr2.cleaned.hg38.chr11.vcf.gz
-
-# bsub -P SJLIFE -J ukbb_haplotype_extract3.chr11.129361171-129561171 -oo ukbb_haplotype_extract3.chr11.129361171-129561171.out -eo ukbb_haplotype_extract3.chr11.129361171-129561171.err -R "rusage[mem=10000]" -q large_mem "sh /home/wletsou/scripts/ukbb_haplotype_extract3.sh ukbb_bca_cases.indiv,ukbb_bca_controls.indiv,dbgap28544_cases.indiv,dbgap28544_controls.indiv ukbb_snp_list.txt /research/projects/yasuigrp/EpiGenetics/common/yasuigrp_data/ProjHap/ukb.bca/topmed/chr11/chr11.qced.anno.info 11 129361171,129561171 /research/rgs01/project_space/yasuigrp/EpiGenetics/common/yasuigrp_data/ProjHap/ukb.bca/topmed/chr11/ukbb.topmed.chr11.129361171-129561171.hg38.vcf.gz,dbgap28544_cases+dbgap28544_controls.chr11.129361171-129561171.vcf.gz"
+# bsub -P SJLIFE -J ukbb_haplotype_extract3.chr11.69231642-69431642 -oo ukbb_haplotype_extract3.chr11.69231642-69431642.out -eo ukbb_haplotype_extract3.chr11.69231642-69431642.err -R "rusage[mem=10000]" -q large_mem "sh /home/wletsou/scripts/ukbb_haplotype_extract3.sh ukbb_bca_cases.indiv,ukbb_bca_controls.indiv,dbgap28544_cases.indiv,dbgap28544_controls.indiv ukbb_snp_list.chr11.69231642-69431642.txt chr11.qced.anno.info 11 69231642,69431642 ukbb.topmed.chr11.69231642-69431642.hg38.vcf.gz,dbgap28544_cases+dbgap28544_controls.chr11.69231642-69431642.vcf.gz"
 
 POPULATION=$1 # commas-separated list of population indiv files
-SNPS=$2 # optional comma-separated list of snps or file with one snp per line
+SNPS=$2 # optional comma-separated list of snps or file with one rsid snp per line
 INFO=$3 # $INFO, used for converting hg38 to hg19
 CHR=$4 # single chromosome number
 BP_RANGE=$5 # comma-separated list from_bp,to_bp of region on chromosome CHR
@@ -22,7 +19,7 @@ module load tabix/0.2.6
 
 if [ -z $HOME_DIR ];
 then
-  HOME_DIR=$(echo "/home/wletsou/scripts")
+  unset HOME_DIR
 fi
 
 if [ -z $DIRECTORY ];
@@ -37,18 +34,8 @@ POPULATION=($(echo $POPULATION | perl -pne 's/[,]/ /g'))
 
 test -f $INFO || (>&2 echo "SNP info file not found."; exit 1)
 
-# if [ -z $VCF_FILES ]
-# then
-#   VCF=$(echo "/research/rgs01/project_space/yasuigrp/EpiGenetics/common/yasuigrp_data/ProjHap/dbgap28544/topmed/for_william/ukbb.topmed/")
-#   cd $VCF
-#   array=($(ls | grep 'chr'${CHR[0]}'[_.].*vcf.gz$')) # format of vcf.gz files with chr CHR in their name; use ukbb_gds2vcf.R to conver gds files to vcf if vcf does not exist
-#   declare -p array
-#   file_str=${array[0]} # file name of the the .vcf.gz file
-#   cd $DIRECTORY
-#   VCF_FILES=${VCF}/${file_str}
-# else
-#   VCF=${VCF_FILES##*/} # location of VCF_FILES found by trimming before last forward slash /
-# fi
+test -z $VCF_FILES && (>&2 echo "VCF files not supplied"; exit 1)
+test -f $VCF_FILES || (>&2 echo "VCF files $VCF_FILES not found"; exit 1)
 
 VCF_FILES=($(echo $VCF_FILES | sed 's/[,]/ /g'))
 

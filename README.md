@@ -44,7 +44,7 @@ Your input haplotype file <kbd>haplotype_estimates.cases.${NAME}.txt</kbd> shoul
   </tr>
  </table>
  
-Each row is chromosome from subject <kbd>sid</kbd> in the cases population; another file should exist for the controls.  Alternate alleles of SNP <kbd>rsid_Alt</kbd> are indicated with a 1 and reference alleles with a 0.
+Each row is chromosome from subject <kbd>sid</kbd> in the cases population; another file should exist for the controls.&nbsp; Alternate alleles of SNP <kbd>rsid_Alt</kbd> are indicated with a 1 and reference alleles with a 0.&nbsp; Such files are prepared from the scripts in <kbd>scripts-haplotype_extraction</kbd>.
 
 Find all unique chromosomes in <kbd>haplotype_estimates.cases.${NAME}.txt</kbd> using
 
@@ -80,7 +80,7 @@ bsub -P ChromosomeOverlap -J ChromosomeOverlap_iteration_sub_parallel.v3.Iterati
 The overlaps are partioned to nodes using <kbd>index2combo2.R</kbd>, which assigns a unique multiindex <kbd>i_1,i_2,...,i_sigma</kbd> corresponding to the I<sup>th</sup> overlap of <kbd>$SIGMA</kbd> chromosomes in a &sigma;-dimensional triangular array:
 
 ```
-index2combo2.R I=starting_index n=total_number_of_chromosomes sigma=$SIGMA
+RScript index2combo2.R I=starting_index n=total_number_of_chromosomes sigma=$SIGMA
 ```
 
 The value <kbd>50</kbd> indicates that the total number of overlaps per job should be 50, which value doubles until the total number of jobs required to complete all pairwise overlaps is below a threshold <kbd>MAX_JOBS</kbd>; <kbd>2</kbd> indicates that the overlaps should consist of two chromosomes each; and <kbd>0</kbd> indicates that no overlaps have been completed yet (corresponding to Iteration000).&nbsp;  The output of this step is a file <kbd>Pattern_combined.Iteration001.${NAME}\_${PATTERN}.txt</kbd>, containing counts of meta-chromosomes and their corresponding SNP-alleles, and another file <kbd>Closed_patterns_stats.${NAME}_${PATTERN}.txt</kbd>, which keeps track of all the closed patterns found so far and the iteration at which they were discovered.&nbsp; The program automatically halts after completing iteration 1 to allow the user to apply p-value-based filtering.

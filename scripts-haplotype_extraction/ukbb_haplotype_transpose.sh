@@ -1,9 +1,9 @@
 #! /bin/bash
 set -e
 
-# awk 'NR==FNR{array[$1]=$0; next} ($1 in array){printf "%s\t",array[$1]; for (j=2;j<=NF;j++) {printf "%s%s",$j,(j<NF?"\t":"\n")} }' haplotype_estimates_transpose.ukbb_bca_cases.chr11.68850000-69231641.txt haplotype_estimates_transpose.ukbb_bca_controls.chr11.68850000-69231641.txt > haplotype_estimates_transpose.ukbb_bca_cases+controls.chr11.68850000-69231641.txt
+# transpose a haplotype_estimates file from chromosomes x SNP to SNP x chromosome, or vice versa
 
-# bsub -P SJLIFE -J ukbb_haplotype_transpose -oo ukbb_haplotype_transpose.out -eo ukbb_haplotype_transpose.err -R "rusage[mem=10000]" -q "large_mem" "/home/wletsou/scripts/ukbb_haplotype_transpose.sh haplotype_estimates_transpose.ukbb_bca_cases+controls.chr11.68850000-69231641.txt 1"
+# bsub -P SJLIFE -J ukbb_haplotype_transpose -oo ukbb_haplotype_transpose.out -eo ukbb_haplotype_transpose.err -R "rusage[mem=10000]" -q "large_mem" "/home/wletsou/scripts/ukbb_haplotype_transpose.sh haplotype_estimates.ukbb_bca_cases+controls.chr11.69231642-69431642.txt 1"
 
 FILE=$1 # haplotypes file to be transposed into rsid x chromosome
 HEADER=$2 # whether (1) or not (0) the transposed file should have a header
@@ -28,7 +28,7 @@ echo Output file name is $filename.
 printf "\n"
 
 test -z $HEADER && HEADER=1 # include header by default
-! [[ $HEADER =~ ^[01]+$ ]] && (>&2 echo "Error: HEADER not 0 or 1"; exit 1) # https://stackoverflow.com/questions/806906/how-do-i-test-if-a-variable-is-a-number-in-bash
+! [[ $HEADER =~ ^[01]+$ ]] && (>&2 echo "Error: HEADER not 0 or 1"; exit 1)
 echo Header will$( (($HEADER==0)) && echo " not" || echo "") be included.
 printf "\n"
 

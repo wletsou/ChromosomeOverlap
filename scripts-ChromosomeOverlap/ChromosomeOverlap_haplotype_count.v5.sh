@@ -1,9 +1,7 @@
 #! /bin/bash
 set -e
 
-# For each haplotype, prints a = cases counts, b = controls counts, c = cases non-counts, d = controls non-counts
-
-# sh HOME_DIR/ChromosomeOverlap_haplotype_count.v2.sh haplotype_estimates.ukbb_bca_cases.chr11.69231642-69431642.txt,haplotype_estimates.ukbb_bca_controls.chr11.69231642-69431642.txt Pattern_combined.Iteration000.chr11.69231642-69431642_2,j.txt "" "chr11.69231642-69431642"
+# For each haplotype, print a = cases counts, b = controls counts, c = cases non-counts, d = controls non-counts
 
 # Rscript HOME_DIR/ChromosomeOverlap_fisher_exact.R -f haplotype_segregation.chr11.69231642-69431642.patterns_0000-XXXX.txt -o chr11.69231642-69431642.patterns_0000-XXXX
 

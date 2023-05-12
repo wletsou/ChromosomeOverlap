@@ -1,10 +1,12 @@
 #! /bin/bash
 set -e
 
+# for generating a DRIVE vcf file from the region of interest
+
 # cut -f13,14 dbgap28544.pheno.txt | awk 'BEGIN{OFS="\t"} (NR > 1 && $2 == 1){print $1,$1}' | sort -gk1 > dbgap28544_cases.indiv
 # cut -f13,14 dbgap28544.pheno.txt | awk 'BEGIN{OFS="\t"} (NR > 1 && $2 == 0){print $1,$1}' | sort -gk1 > dbgap28544_controls.indiv
 
-# bsub -P SJLIFE -J dbgap_haplotype_merge.chr11.129361171-129561171 -oo dbgap_haplotype_merge.chr11.129361171-129561171.out -eo dbgap_haplotype_merge.chr11.129361171-129561171.err -R "rusage[mem=1000]" "sh /home/wletsou/scripts/dbgap_haplotype_merge.sh dbgap28544_cases,dbgap28544_controls "/research/projects/yasuigrp/EpiGenetics/common/yasuigrp_data/ProjHap/dbgap28544/topmed/for_william/dbgap28544.pheno.txt" "/research/projects/yasuigrp/EpiGenetics/common/yasuigrp_data/ProjHap/ukb.bca/topmed/chr11/chr11.qced.anno.info" ukbb_snp_list.txt 11 129361171,129561171 /research/projects/yasuigrp/EpiGenetics/common/yasuigrp_data/ProjHap/dbgap28544/topmed/topmedr2/cleaned/vcfs/dbgap28544.topmedr2.cleaned.hg38.chr11.vcf.gz"
+# bsub -P SJLIFE -J dbgap_haplotype_merge.chr11.69231642-69431642 -oo dbgap_haplotype_merge.chr11.69231642-69431642.out -eo dbgap_haplotype_merge.chr11.69231642-69431642.err -R "rusage[mem=1000]" "sh dbgap_haplotype_merge.sh dbgap28544_cases,dbgap28544_controls "dbgap28544.pheno.txt" "chr11.qced.anno.info" ukbb_snp_list.chr11.69231642-69431642.txt 11 69231642,69431642.txt dbgap28544.topmedr2.cleaned.hg38.chr11.vcf.gz"
 
 POPULATION=$1 # commas-separated list of population names or indiv files
 PHENO=$2 # phenotype file for determining case/control status of POPULATION
@@ -12,7 +14,7 @@ INFO=$3 # SNP info file for converting hg38 to hg19
 SNPS=$4 # comma-separated list of snps or file with one snp per line
 CHR=$5 # single chromosome number, appended with "chr" if necessary to match VCF_FILE
 BP_RANGE=$6 # comma-separated list from_bp,to_bp of region on chromosome CHR
-VCF_FILE=$7 # location of vcf files
+VCF_FILE=$7 # vcf file
 DIRECTORY=$8 # PWD by default
 HOME_DIR=$9 # location of program files
 
@@ -21,7 +23,7 @@ module load tabix/0.2.6
 
 if [ -z $HOME_DIR ];
 then
-  HOME_DIR=$(echo "/home/wletsou/scripts")
+  unset HOME_DIR
 fi
 
 if [ -z $DIRECTORY ];
@@ -53,18 +55,11 @@ do
 done
 printf "\n"
 
-if [ -z $VCF_FILE ]
-then
-  VCF=$(echo "/research_jude/rgs01_jude/project_space/yasuigrp/EpiGenetics/common/yasuigrp_data/ProjHap/dbgap28544/topmed/for_william")
-  cd $VCF
-  array=($(ls | grep ${CHR[0]}'[_.].*vcf.gz$')) # format of vcf.gz files with chr CHR in their name; use ukbb_gds2vcf.R to conver gds files to vcf if vcf does not exist
-  declare -p array
-  file_str=${array[0]} # file name of the the .vcf.gz file
-  cd $DIRECTORY
-  VCF_FILE=${VCF}/${file_str}
-else
-  VCF=${VCF_FILE##*/} # location of VCF_FILE found by trimming before last forward slash /
-fi
+test -z $VCF_FILE && (>&2 echo "VCF file not supplied"; exit 1)
+test -f $VCF_FILE || (>&2 echo "VCF file $VCF_FILE not found"; exit 1)
+
+VCF=${VCF_FILE##*/} # location of VCF_FILE found by trimming before last forward slash /
+
 echo Phased haplotypes files is $VCF_FILE
 
 if [ ! -f ${VCF_FILE}.csi ] && [ ! -f ${VCF_FILE}.tbi ] # create index if it does not exist
@@ -93,7 +88,6 @@ printf "\n"
 
 samples_file=$(echo ${POPULATION[*]%.*} | sed 's/ /+/g').samples
 echo Get unique individuals in supplied .indiv file in order:
-# https://stackoverflow.com/questions/12744031/how-to-change-values-of-bash-array-elements-without-loop
 echo awk \'{seen[NR]=\$1\;} END{n = length\(seen\)\; for \(i=1\;i\<=n\;i++\) {print seen[i]} }\' ${POPULATION[*]/%/.indiv} \> $samples_file # unique samples in .indiv file for population i
 awk '{seen[NR]=$1;} END{n = length(seen); for (i=1;i<=n;i++) {print seen[i]} }' ${POPULATION[*]/%/.indiv} > $samples_file # unique samples in .indiv file for population i, printed in same order as .indiv file
 printf "\n"

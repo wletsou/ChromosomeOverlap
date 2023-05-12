@@ -1,7 +1,9 @@
 #! /bin/bash
 set -e
 
-# sh /home/wletsou/scripts/ukbb_haplotype_permute.sh /research/rgs01/project_space/yasuigrp/EpiGenetics/common/yasuigrp_data/ProjHap/ukb.bca/hap.gds/ukb.bca.pheno.txt /scratch_space/wletsou/sjlife/GWAS/UKBB_chr11.34/haplotype_estimates.ukbb_bca_cases+ukbb_bca_controls.chr11.69231642-69431642.txt rs7105934_A=0,rs79373485_T=0,rs4444099_T=0,rs117752342_T=0,rs1122316_A=0,rs76809977_T=0,rs559664_G=1,rs657315_T=0,rs498931_G=0,rs71465432_T=0,rs183782062_T=0,rs79442425_T=0,rs111929748_T=0,rs117490805_A=0,rs79241527_T=0,rs72932500_G=0,rs57162717_T=0 20200116 ukbb_bca_cases,ukbb_bca_controls ukb.bca.pheno.txt
+# for randomly permuting cases and controls such that the number of HAPLOTYPE hetero- and homozygotes is preserved
+
+# sh /home/wletsou/scripts/ukbb_haplotype_permute.sh ukb.bca.pheno.unpermuted.txt haplotype_estimates.ukbb_bca_cases+ukbb_bca_controls.chr11.69231642-69431642.txt rs7105934_A=0,rs79373485_T=0,rs4444099_T=0,rs117752342_T=0,rs1122316_A=0,rs76809977_T=0,rs559664_G=1,rs657315_T=0,rs498931_G=0,rs71465432_T=0,rs183782062_T=0,rs79442425_T=0,rs111929748_T=0,rs117490805_A=0,rs79241527_T=0,rs72932500_G=0,rs57162717_T=0 20200116 ukbb_bca_cases,ukbb_bca_controls ukb.bca.pheno.txt
 
 PHENOTYPES=$1 # case/controls status
 POPULATION=$2 # combined haplotype_estimates file for population

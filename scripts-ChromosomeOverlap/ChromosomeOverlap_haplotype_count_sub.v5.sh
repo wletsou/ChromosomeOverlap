@@ -1,7 +1,7 @@
 #! /bin/bash
 set -e
 
-# Submits groups of $DELTA haplotypes in the $HAPLOTYPES file to ChromosomeOverlap_haplotype_count.sh and ChromosomeOverlap_fisher_exact.R to evaluate p-values for thesegregation between cases and controls
+# Submits groups of $DELTA haplotypes in the $HAPLOTYPES file to ChromosomeOverlap_haplotype_count.sh and ChromosomeOverlap_fisher_exact.R to evaluate p-values for the partitioning between cases and controls
 
 # sh HOME_DIR/ChromosomeOverlap_haplotype_count_sub.v2.sh cases_haplotypes,controls_haplotypes Pattern_combined.Iteration000.NAME.2,j.txt 50 "" "Iteration000.NAME" DIRECTORY HOME_DIR
 
@@ -10,7 +10,7 @@ HAPLOTYPES=$2 # haplotype frequency with name in last column and optional iterat
 DELTA=$3 # number of haplotype to evaluate in a single job
 ITERATION=$4 # optional value of overlap iteration (comma-separated list) for selecting patterns to partition; only use if HAPLOTYPES's first column is iteration number
 NAME=$5 # optional name for output files
-DIRECTORY=$6 # location to store output/where .indiv files are found
+DIRECTORY=$6 # working directory
 HOME_DIR=$7 # location of program files
 
 module load R/3.6.1
@@ -38,7 +38,6 @@ then
   DELTA=50
 fi
 
-# MAX_JOBS=$(cat "/hpcf/lsf/lsf_prod/conf/lsbatch/hpcf_research_cluster/configdir/lsb.users" | grep "#wletsou" | awk '{print $2}')
 if [ -z $MAX_JOBS ]
 then
   MAX_JOBS=2500 #revised limit
@@ -83,7 +82,7 @@ echo bsub \-P SJLIFE \-J \"myJob[1-$n_jobs]\" \-oo ${DIRECTORY/%/\/}ChromosomeOv
 job_id=$(bsub -P SJLIFE -J "myJob[1-$n_jobs]" -oo ${DIRECTORY/%/\/}ChromosomeOverlap_haplotype_count.v5${NAME/#/.}.%I.out -eo ${DIRECTORY/%/\/}ChromosomeOverlap_haplotype_count.v5${NAME/#/.}.%I.err -R "rusage[mem=1024]" -R "order[!ut]" -R "select[ut < 0.9]" "sh ${HOME_DIR/%/\/}ChromosomeOverlap_haplotype_count.v5.sh ${POPULATION[0]},${POPULATION[1]} ${HAPLOTYPES%.*}.\$LSB_JOBINDEX.txt \"${DELTA}.\$LSB_JOBINDEX\" \"${NAME/%/.}job_\$LSB_JOBINDEX\" $DIRECTORY $HOME_DIR")
 
 echo $job_id
-job_id=$(echo $job_id | awk 'b=gensub(/.*<([0-9]*)>.*/,"\\1","g",$0) {print b}') #extract job_id (number) from output
+job_id=$(echo $job_id | awk 'b=gensub(/.*<([0-9]*)>.*/,"\\1","g",$0) {print b}') # extract job_id (number) from output
 printf "\n"
 
 echo Wait until all jobs done:
@@ -118,7 +117,7 @@ echo bsub \-P SJLIFE \-J myJob[1-$n_jobs] \-oo ${DIRECTORY/%/\/}ChromosomeOverla
 job_id=$(bsub -P SJLIFE -J myJob[1-$n_jobs] -oo ${DIRECTORY/%/\/}ChromosomeOverlap_fisher_exact.%I.out -eo ${DIRECTORY/%/\/}ChromosomeOverlap_fisher_exact.%I.err -R "rusage[mem=1024]" -R "order[!ut]" -R "select[ut < 0.9]" "Rscript ${HOME_DIR/%/\/}ChromosomeOverlap_fisher_exact.R -f haplotype_segregation${NAME/#/.}.job_\$LSB_JOBINDEX.txt -d ${DIRECTORY} -o ${NAME/%/.}job_\$LSB_JOBINDEX")
 
 echo $job_id
-job_id=$(echo $job_id | awk 'b=gensub(/.*<([0-9]*)>.*/,"\\1","g",$0) {print b}') #extract job_id (number) from output
+job_id=$(echo $job_id | awk 'b=gensub(/.*<([0-9]*)>.*/,"\\1","g",$0) {print b}') # extract job_id (number) from output
 printf "\n"
 
 echo Wait until all jobs done:

@@ -1,10 +1,14 @@
 #! /bin/bash
 set -e
 
+# for extracting genotyped SNPs in UKBB data
+
+# bsub -P SJLIFE -J ukbb_hybrid_haplotype3.chr11.68850000-69500000 -oo ukbb_hybrid_haplotype3.chr11.68850000-69231641.out -eo ukbb_hybrid_haplotype3.chr11.68850000-69500000.err -R "rusage[mem=20000]" "sh ukbb_hybrid_haplotype3.sh ukbb_bca_cases.indiv,ukbb_bca_controls.indiv 11 68850000,69500000 ukb.bca.hap.chr11.new.vcf.gz"
+
 POPULATION=$1 # commas-separated .indiv files, e.g. ukbb_bca_20200116_cases.indiv or ukbb_bca_all_controls.indiv
 CHR=$2 # single chromosome number
 BP_RANGE=$3 # comma-separated list from_bp,to_bp of regions on chromosome CHR
-VCF_FILE=$4 # optional vcf file
+VCF_FILE=$4 # vcf file
 INFO=$5 # optional snp annotation file with CHR in second column, hg19 POS in third column, and SNP rsid in sixth column
 DIRECTORY=$6 # PWD by default
 HOME_DIR=$7 # location of program files
@@ -15,7 +19,7 @@ module load tabix/0.2.6
 printf "\n"
 if [ -z $HOME_DIR ];
 then
-  HOME_DIR=$(echo "/home/wletsou/scripts")
+  unset HOME_DIR
 fi
 echo Home directory is $HOME_DIR
 
@@ -29,14 +33,14 @@ printf "\n"
 # Sort chromosome regions
 
 BP_RANGE=($(echo $BP_RANGE | perl -pne 's/([0-9]+)[,]*/$1 /g'))
-IFS=$'\n' # https://stackoverflow.com/questions/7442417/how-to-sort-an-array-in-bash
+IFS=$'\n'
 BP_RANGE=($(echo "${BP_RANGE[*]}" | sort -gk1))
 n_regions=$((${#BP_RANGE[@]}/2)) # number of regions on chromosome CHR
 unset IFS
 
 # Make array of n_regions copies of CHR
 IFS=$' '
-CHR=$(eval "printf ''$CHR' %.0s' {1..$n_regions}") # https://superuser.com/questions/86340/linux-command-to-repeat-a-string-n-times
+CHR=$(eval "printf ''$CHR' %.0s' {1..$n_regions}")
 CHR=($(echo "${CHR[*]}"))
 unset IFS
 
@@ -44,17 +48,8 @@ unset IFS
 
 POPULATION=($(echo $POPULATION | perl -pne 's/[,]/ /g'))
 
-if [ -z $VCF_FILE ]
-then
-  VCF=$(echo "/research/rgs01/project_space/yasuigrp/EpiGenetics/common/yasuigrp_data/biobank/gds/ukb.bca.hap")
-  cd $VCF
-  array=($(ls | grep 'chr'${CHR[0]}'[_.].*vcf.gz$')) # format of vcf.gz files with chr CHR in their name; use ukbb_gds2vcf.R to conver gds files to vcf if vcf does not exist
-  declare -p array
-  echo array is $array
-  file_str=${array[0]} # file name of the the .vcf.gz file
-  cd $DIRECTORY
-  VCF_FILE=${VCF}/${file_str}
-fi
+test -z $VCF_FILE && (>&2 echo "VCF file not supplied"; exit 1)
+test -f $VCF_FILE || (>&2 echo "VCF file $VCF_FILE not found"; exit 1)
 
 echo Phased haplotypes files is $VCF_FILE
 printf "\n"
@@ -82,8 +77,6 @@ then
   echo tabix \-p vcf $VCF_FILE
   tabix -p vcf $VCF_FILE
 
-  # echo bcftools index -t $VCF_FILE
-  # bcftools index -t $VCF_FILE
   printf "\n"
 fi
 

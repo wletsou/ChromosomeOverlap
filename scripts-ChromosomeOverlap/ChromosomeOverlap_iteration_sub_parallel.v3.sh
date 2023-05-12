@@ -78,7 +78,6 @@ fi
 
 if [ -z $SIGMA ];
 then
-  # SIGMA=1 # number of patterns in an overlap
   SIGMA=2 # number of patterns in an overlap
 fi
 
@@ -108,7 +107,7 @@ do
 done
 test ! -z $found && (( $found>0 )) && found=0 && printf "\n" || (>&2 echo "No Iteration$(printf "%0.3d" $ITERATION) file found."; exit 1)
 
-n_overlaps=() #initialize array of overlaps to be performed, based on number of lines in Pattern_combined files for each population
+n_overlaps=() # initialize array of overlaps to be performed, based on number of lines in Pattern_combined files for each population
 for file in Pattern_combined.${file_str}.*${NAME}*${PATTERN}.txt
 do
   echo Determine number of $SIGMA\-overlaps for $file
@@ -127,20 +126,20 @@ do
     n_tuples=0
   fi
   let n_tuples=($num/$den)
-  n_overlaps+=($n_tuples) #add to array of counts https://stackoverflow.com/questions/1951506/add-a-new-element-to-an-array-without-specifying-the-index-in-bash
-  n_input_files=${#n_overlaps[@]} #total number of SNP files in. Should be the same from iteration to iteration
+  n_overlaps+=($n_tuples) # add to array of counts
+  n_input_files=${#n_overlaps[@]} # total number of SNP files. Should be the same from iteration to iteration
 done
 printf "\n"
 N_OVERLAPS=0
 echo Array of tuples to be performed in each file:
 declare -p n_overlaps
 printf "\n"
-#get maximum in array n_overlaps
+# get maximum in array n_overlaps
 for n in ${n_overlaps[@]}
 do
   if (( $n > $N_OVERLAPS ));
   then
-    N_OVERLAPS=$n #replace old maximum
+    N_OVERLAPS=$n # replace old maximum
   fi
 done
 echo Maximum number of overlaps to be performed is $N_OVERLAPS.
@@ -162,7 +161,7 @@ while (($N_OVERLAPS>0)) # continue as long as there is more than one pattern to 
 do
   file_str=$(printf "Iteration%0.3d" $ITERATION) # from the last round
   ITERATION=$(($ITERATION+1)) # starts at 0, so first round creates iteration.Step001
-  file_str_next=$(printf "Iteration%0.3d" $ITERATION) #in this round
+  file_str_next=$(printf "Iteration%0.3d" $ITERATION) # in this round
 
   # Create subdirectory with necessary files
   char=$(($(echo $N_JOBS | wc -m)-1)) # the number of characters in the total number of jobs
@@ -181,7 +180,7 @@ do
     echo cp $file ${SUBDIR/%//}${file##*/}
     cp $file ${SUBDIR/%//}${file##*/} && printf "\n"
 
-    echo Transpose Patterns_combined file and move to $SUBDIR: # used by pattern_overlap_loop5.sh
+    echo Transpose Patterns_combined file and move to $SUBDIR:
     TRANSPOSE_FILE=${file%.*}.transpose.${file##*.}
 
     mem_req=$(du $file | cut -f1 | awk '{sum+=$1} END{print int(3*sum/1024)}') # 1.5 times total size, in MB, of Overlap_tuples files
@@ -197,23 +196,10 @@ do
     bsub -P SJLIFE -J transpose.${file_str} -oo transpose.${file_str}.out -eo transpose.${file_str}.err -R "rusage[mem=$mem_req]" -K "awk 'BEGIN{OFS=\"\\t\"}; {for(j=1;j<=NF;j++) {a[NR,j]=\$j; n_rows=NR; n_cols=(n_cols<NF?NF:n_cols)} } END{for (j=1;j<=n_cols;j++) {for (i=1;i<=n_rows;i++) {printf \"%s%s\",a[i,j],(i==n_rows?\"\\n\":\"\\t\")} } }' $file > ${SUBDIR/%//}${TRANSPOSE_FILE##*/}" && printf "\n"
 
     mem_req=5000
-
-    # echo awk \'BEGIN{OFS=\"\\t\"}\; {for\(j=1\;j\<=NF\;j++\) {a[NR,j]=\$j\; n_rows=NR\; n_cols=\(n_cols\<NF?NF:n_cols\)} } END{for \(j=1\;j\<=n_cols\;j++\) {for \(i=1\;i\<=n_rows\;i++\) {printf \"%s%s\",a[i,j],\(i==n_rows?\"\\n\":\"\\t\"\)} } }\' $file \> ${SUBDIR/%//}${TRANSPOSE_FILE##*/}
-    # awk 'BEGIN{OFS="\t"}; {for(j=1;j<=NF;j++) {a[NR,j]=$j; n_rows=NR; n_cols=(n_cols<NF?NF:n_cols)} } END{for (j=1;j<=n_cols;j++) {for (i=1;i<=n_rows;i++) {printf "%s%s",a[i,j],(i==n_rows?"\n":"\t")} } }' $file > ${SUBDIR/%//}${TRANSPOSE_FILE##*/} && printf "\n" # transpose to counts in first row, snp patterns by bar groups in subsequent rows
-
   done
 
   for file in ${SUBDIR/%//}Pattern_combined.${file_str}*${NAME}*${PATTERN}.txt
   do
-    # test -f ${SUBDIR/%//}${TRANSPOSE_FILE##*/} && (mem_req=$(du ${SUBDIR/%//}${TRANSPOSE_FILE##*/} | cut -f1 | awk '{sum+=$1} END{print int(1.5*sum/1024)}') ) || (>&2 echo Did not find ${SUBDIR/%//}${TRANSPOSE_FILE##*/}; exit 1) # 1.5 times total size, in MB, of transposed file
-    # if (( $((mem_req+0)) < 1024 ))
-    # then
-    #   mem_req=5000
-    # fi
-
-    # echo bsub \-P SJLIFE \-J \"myJob[1-$N_JOBS]\" \-eo ${SUBDIR/%//}ChromosomeOverlap_iteration.v2.${file##*/}.%I.err \-oo ${SUBDIR/%//}ChromosomeOverlap_iteration.v2.${file##*/}.%I.out \-R \"rusage[mem=5000]\" \-R \"order[!ut]\" \-R \"select[ut \< 0.9 \&\& r15m \* ncpus \* cpuf / 6 \< 20 \&\& status==\'ok\']\" \"sh ${HOME_DIR/%//}ChromosomeOverlap_iteration.v2.sh \\\"\\\" ${SUBDIR/%//}${file##*/} ${SUBDIR/%//}${TRANSPOSE_FILE##*/} ${DELTA}.\\\$LSB_JOBINDEX 2500000 $SIGMA ${file_str_next} $DIRECTORY $HOME_DIR\"
-    # job_id=$(bsub -P SJLIFE -J "myJob[1-$N_JOBS]" -eo ${SUBDIR/%//}ChromosomeOverlap_Iteration.v2.${file##*/}.%I.err -oo ${SUBDIR/%//}ChromosomeOverlap_iteration.v2.${file##*/}.%I.out -R "rusage[mem=5000]" -R "order[!ut]" -R "select[ut < 0.9 && r15m * ncpus * cpuf / 6 < 20 && status=='ok']" "sh ${HOME_DIR/%//}ChromosomeOverlap_iteration.v2.sh \"\" ${SUBDIR/%//}${file##*/} ${SUBDIR/%//}${TRANSPOSE_FILE##*/} ${DELTA}.\$LSB_JOBINDEX 2500000 $SIGMA ${file_str_next} $DIRECTORY $HOME_DIR")
-    # echo $job_id && printf "\n"
 
     echo bsub \-P SJLIFE \-J \"myJob[1-$N_JOBS]\" \-eo ${SUBDIR/%//}ChromosomeOverlap_iteration.v2.${file##*/}.%I.err \-oo ${SUBDIR/%//}ChromosomeOverlap_iteration.v2.${file##*/}.%I.out \-R \"rusage[mem=5000]\" \-R \"order[!ut]\" \-R \"select[ut \< 0.9 \&\& status==\'ok\']\" \"sh ${HOME_DIR/%//}ChromosomeOverlap_iteration.v2.sh \\\"\\\" ${SUBDIR/%//}${file##*/} ${SUBDIR/%//}${TRANSPOSE_FILE##*/} ${DELTA}.\\\$LSB_JOBINDEX 2500000 $SIGMA ${file_str_next} $DIRECTORY $HOME_DIR\"
     job_id=$(bsub -P SJLIFE -J "myJob[1-$N_JOBS]" -eo ${SUBDIR/%//}ChromosomeOverlap_Iteration.v2.${file##*/}.%I.err -oo ${SUBDIR/%//}ChromosomeOverlap_iteration.v2.${file##*/}.%I.out -R "rusage[mem=5000]" -R "order[!ut]" -R "select[ut < 0.9 && status=='ok']" "sh ${HOME_DIR/%//}ChromosomeOverlap_iteration.v2.sh \"\" ${SUBDIR/%//}${file##*/} ${SUBDIR/%//}${TRANSPOSE_FILE##*/} ${DELTA}.\$LSB_JOBINDEX 2500000 $SIGMA ${file_str_next} $DIRECTORY $HOME_DIR")
@@ -311,7 +297,7 @@ do
       n_bar_groups=$(($(echo ${pattern_str} | tr -c -d "+" | wc -c)+1))
       echo Number of groups is $n_bar_groups
 
-      # Get the second column (snp pattern) of the new file (file_str_next) and print lines of the first file that do not have a match in the second column https://stackoverflow.com/questions/15251188/find-the-difference-between-two-files
+      # Get the second column (snp pattern) of the new file (file_str_next) and print lines of the first file that do not have a match in the second column
 
       echo Pattern_combined.${file_str_next}.${NAME/%/_}${pattern_str}.txt
       printf "\n"
@@ -430,7 +416,7 @@ do
           fi
           echo $n_tuples tuple$((($n_tuples!=1)) && echo "s" || echo "").
           printf "\n"
-          n_overlaps+=($n_tuples) # add to array of counts https://stackoverflow.com/questions/1951506/add-a-new-element-to-an-array-without-specifying-the-index-in-bash
+          n_overlaps+=($n_tuples) # add to array of counts
         fi
       done
       echo Array of tuples to be performed in each file:
@@ -463,7 +449,7 @@ do
       fi
 
       # Check counts of controls closed patterns among cases and controls, stratified by iteration
-      if ls Closed_patterns_stats.*_${pattern_str}.txt > /dev/null 2>&1 # https://stackoverflow.com/questions/6363441/check-if-a-file-exists-with-wildcard-in-shell-script
+      if ls Closed_patterns_stats.*_${pattern_str}.txt > /dev/null 2>&1
       then
         if [ -f Pattern_combined.${file_str_next}.${NAME/%/_}${pattern_str}.txt ]
         then

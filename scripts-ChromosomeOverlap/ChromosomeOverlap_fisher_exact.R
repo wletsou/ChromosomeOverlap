@@ -1,3 +1,5 @@
+# for running Fisher's exact test on a file of counts a, b, c, and d (columns) for each haplotype (rows)
+
 library(optparse)
 
 option_list = list(make_option(c("-f","--file"),type="character",help="Haplotypes counts file"), make_option(c("-o","--output"),type="character",help="Output file string",default=""), make_option(c("-d","--directory"),type="character",help="Output directory",default=getwd()))
