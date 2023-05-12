@@ -1,6 +1,9 @@
+# for getting the LRT p-values of each haplotype in the combined model, obtained by removing each haplotype from the model one-at-a-time
+
+# Rscript ukbb_backward_selection2.R file=h2+h3.ukbb_discovery.new_allele_counts.txt n=2 groups=1,2,3 threshold=0.05 n_covs=10
+
 args = commandArgs(trailingOnly = TRUE) 
-# print(args)
-# cat("\n")
+
 options("width"=300)
 library(data.table)
 library(stringr)
@@ -16,8 +19,6 @@ eval.cox <- function(X,Y) {
   out <- tryCatch(coxph(formula = eval(parse(text = Y)),data = X),error = function(e) {NULL},warning = function(w) {NULL})
   return(out)
 }
-
-# file="/Volumes/wletsou/Chromosome_Overlap_results/UKBB_chr11.19/new_allele_counts_haplotypes.chr11.69231642-69431642.txt"
 
 if (exists("n_covs")) { # number non-haplotype columns on the right-hand side of the table
   n_covs <- as.numeric(n_covs)
@@ -42,7 +43,7 @@ if (n_covs>0) { # string of covariates for model
 } else {
   covars_str <- ""
 }
-# pos <- unlist(lapply(vars,function(X) tail(gregexpr("1",X)[[1]],n=1)-1)) # get position of last "1" in variable name, the pos-th haplotype
+
 pos <- lapply(vars,function(X) unlist(gregexpr("1",X))-1) # list all positions of "1" in the variable name, indicates which haplotypes are present
 
 if (exists("n")) { # drop the last n variables from model 1 in comparisson to model 0

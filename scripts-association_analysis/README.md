@@ -1,0 +1,14 @@
+# Association analysis #
+
+* Use <kbd>ukbb_haplotype_translate2_sub.sh</kbd> to translate closed patterns from lists of column numbers (of haplotype_estimates file) to rsids
+* Use <kbd>ukbb_haplotype_model9_sub.v2.sh</kbd> and <kbd>drive28544_haplotype_model9_sub.v2.sh</kbd> to get the counts of each haplotype (0, 1, or 2) for each subject in UKBB and DRIVE, respectively
+* Use <kbd>ukbb_haplotype_model9_iterate.v2.sh</kbd> and <kbd>drive28544_haplotype_model9_iterate.v2.sh</kbd> to perform forward-selection on the list of test haplotypes in UKBB and DRIVE, respectively
+* Use <kbd>ukbb_haplotype_model9_count_fit.v2.sh</kbd> and <kbd>drive28544_haplotype_model9_count_fit.v2.sh</kbd> to perform the couting and fitting for a few haplotypes in one step
+* Use <kbd>ukbb_backward_selection.R</kbd> to get the p-values for the haplotypes by removing each haplotype one-at-a-time from the joint model
+* Find the linkage-disequilibrium between any two haplotypes in a population using <kbd>ukbb_haplotype_haplotype_LD2.sh</kbd>
+* Convert haplotypes of the form rsid1_A=0,... to UCSC bed format for plotting
+
+The phenotype file for UKBB must include columns for subject id ("sid"), breast cancer status ("diag") age at diagnosis or censoring ("age.end"), and ten principal components of ancestry ("pc1" to "pc10").&nbsp; The phenotype file for DRIVE must include columns for subject id ("sid"), breast cancer status ("BCa") age at diagnosis or censoring ("ageonset"), and ten principal components of ancestry ("pc1" to "pc10").
+
+The association model finds the effect of each new haplotype over and above the effect of all previously-fit haplotypes.&nbsp; Haplotypes to be fit in each model are numbered from 1 to n in the order in which they are entered, starting with the "included haplotypes" of which each rare haplotype (or "test haplotype") is a subtype.&nbsp; Multiple included haplotypes can be entered in the model by specifying their numbers in the <kbd>JOIN</kbd> parameter (e.g., <kbd>JOIN = 1</kbd> for joining to h1 only).&nbsp; Haplotypes can be grouped together to find the joint effect of having any haplotype in the group using the <kbd>GROUPING</kbd> parameter (e.g., "1,2,3" to find the effect of each individually or "1,2-3" to find the combined effect of haplotypes 2 and 3); both included and test haplotypes can be grouped.&nbsp; If there is to be no grouping or inclusion, <kbd>JOIN</kbd> and <kbd>GROUPING</kbd> are left blank.&nbsp; If only h1 is entered as an included haplotype, <kbd>JOIN = 1</kbd> and <kbd>GROUPING = 1</kbd> at the start of forward selection; additional test haplotypes are included into <kbd>GROUPING</kbd> as forward-selection progresses.&nbsp; The p-value for each haplotype at each round of selection is computed from the likelihood ratio statistic comparing the model with n haplotypes to the model with n&minus;1.
+

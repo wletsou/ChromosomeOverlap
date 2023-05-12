@@ -1,6 +1,9 @@
+# for finding the effect of the newest haplotype on BCa survival in a Cox proportional-hazards model
+
+# Rscript ukbb_haplotype_model5.R file=h2+h3.ukbb_discovery.new_allele_counts.txt groups=1,2,3 verbose=1 n=2 n_covs=10
+
 args = commandArgs(trailingOnly = TRUE) 
-# print(args)
-# cat("\n")
+
 options("width"=300)
 library(data.table)
 library(stringr)
@@ -17,7 +20,6 @@ eval.cox <- function(X,Y) {
   return(out)
 }
 
-# file="/Volumes/wletsou/Chromosome_Overlap_results/UKBB_chr11.19/new_allele_counts_haplotypes.chr11.69231642-69431642.txt"
 
 if (exists("n_covs")) { # number non-haplotype columns on the right-hand side of the table
   n_covs <- as.numeric(n_covs)
@@ -74,9 +76,6 @@ if (length(ll)-n>0) { # only if there are INCLUDED_HAPLOTYPES to which TEST_HAPL
   ranges_combined <- list()
 }
 
-# print(matrix(unlist(mapply(function(X,Y) lapply(pos,function(Z) (any(Z >= ll[X] & Z <= ul[X]) & any(Z >= ll[Y] & Z <= ul[Y]) ) | (any(Z >= ll[X] & Z <= ul[X]) & !(any(Z > ul[length(ll)-n]) ) ) ),1:(length(ll)-n),length(ll)-(n-1):0)),nrow=length(pos),byrow=FALSE) )
-# print(apply(matrix(unlist(mapply(function(X,Y) lapply(pos,function(Z) (any(Z >= ll[X] & Z <= ul[X]) & any(Z >= ll[Y] & Z <= ul[Y]) ) | (any(Z >= ll[X] & Z <= ul[X]) & !(any(Z > ul[length(ll)-n]) ) ) ),1:(length(ll)-n),length(ll)-(n-1):0),2,which),nrow=length(pos),byrow=FALSE),2,which) )
-
 if (sum(unlist(lapply(ranges,length))==0)==0) { # check that each variable category is represented
   if (verbose) {
     print(sprintf("DT[,h%d:=%s]",0,paste(vars[[which(unlist(lapply(pos,function(X) any(X < 0))))]],collapse="+")))
@@ -88,13 +87,11 @@ if (sum(unlist(lapply(ranges,length))==0)==0) { # check that each variable categ
       if (verbose) {
         a <- i/n # which included_haplotype group the ith test_haplotype is being joined to
         b <- n+i/n # new variable formed by joining test_haplotype to included_haplotype a
-        # print(sprintf("DT[,h%s:=%s]",paste(sort(unique(unlist(pos[ranges_combined[[i]]]))),collapse="."),paste(vars[ranges_combined[[i]]],collapse="+")))
         print(sprintf("DT[,h%s:=%s]",paste(c(a,b),collapse="."),paste(vars[ranges_combined[[i]]],collapse="+")))
       }
       a <- i/n # which included_haplotype group the ith test_haplotype is being joined to
       b <- length(ll)-1+i/n # new variable formed by joining test_haplotype to included_haplotype a
       eval(parse(text = sprintf("DT[,h%s:=%s]",paste(c(a,b),collapse="."),paste(vars[ranges_combined[[i]]],collapse="+"))))
-      # str0 <- sprintf("%s%sh%s",str0,ifelse(nchar(str0)>0," + ",""),paste(sort(unique(unlist(pos[ranges_combined[[i]]]))),collapse="."))
       str0 <- sprintf("%s%sh%s",str0,ifelse(nchar(str0)>0," + ",""),paste(c(a,b),collapse="."))
     }
   }

@@ -1,6 +1,6 @@
+# Logistic model for the effect of the newest test_haplotype in the model
+
 args = commandArgs(trailingOnly = TRUE) 
-# print(args)
-# cat("\n")
 options("width"=300)
 library(data.table)
 library(stringr)
@@ -16,9 +16,6 @@ eval.glm <- function(X,Y) {
   out <- tryCatch(glm(eval(parse(text = Y)),family = binomial,X,maxit = 100),error = function(e) {NULL},warning = function(w) {NULL})
   return(out)
 }
-
-# file="/Volumes/wletsou/sjlife/GWAS/dbgap28544_chr11.1/new_allele_counts_haplotypes.chr11.68700000-69700000.txt"
-# file="/Volumes/wletsou/sjlife/GWAS/dbgap28544_chr11.1/allele_counts_haplotypes.chr11.68700000-69700000.txt"
 
 if (exists("n_covs")) { # number non-haplotype columns on the right-hand side of the table
   n_covs <- as.numeric(n_covs)

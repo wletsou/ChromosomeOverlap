@@ -1,11 +1,11 @@
 #! /bin/bash
 set -e
 
-# sh /home/wletsou/scripts/ukbb_haplotype_model9_fit.sh allele_counts.txt included_haplotype_0.new_allele_counts.075-089.txt bca.BR.txt 1 "1" "" Conditional_haplotype_effects.txt
+# for evaluating the newest TEST_HAPLOTYPE in a logistic model model for BCa
 
 INCLUDED_HAPLOTYPES=$1 # counts of included_haplotypes for each chromosome (can be just a list of chromosomes if no included_haplotypes in model)
 TEST_HAPLOTYPES=$2 # counts of each new haplotype to be joined to each included_haplotype (comma-separated list of files)
-PHENOTYPES=$3 # phenotypes file for getting age and affected status
+PHENOTYPES=$3 # phenotypes file for getting age ("ageonset"), principal components of ancestry ("pc1" to "pc10") and affected status ("BCa") from each subject ("sid")
 JOIN=$4 # comma-separated list of which INCLUDED_HAPLOTYPES to join to (start with "1", correction will be done for 0-based indexing); use all if value is empty
 GROUPING=$5 # comma-separated list 1,2-4,5,6-8,... of how the INCLUDED_HAPLOTYPES should be grouped in the model; single-grouping if empty
 NAME=$6 # optional name appended to temporary files
@@ -31,7 +31,7 @@ then
   unset NAME
 fi
 
-test -z $PHENOTYPES && (>&2 echo "Phenotypes file $PHENOTYPES not supplied"; exit 1)
+test -z $PHENOTYPES && (>&2 echo "Phenotypes file not supplied"; exit 1)
 test -f $PHENOTYPES || (>&2 echo "Phenotypes file $PHENOTYPES not found"; exit 1)
 
 test_haplotypes_files=($(echo $TEST_HAPLOTYPES | perl -pne 's/[,]/ /g'))

@@ -1,3 +1,5 @@
+# Cox proportional-hazards model for the effect of the newest test_haplotype in the model
+
 library(optparse)
 library(data.table)
 library(survival)
@@ -17,7 +19,7 @@ opt = parse_args(opt_parser)
 included_haplotypes_file <- opt$included_haplotypes_file # file containing chromosomes ids and counts of included haplotypes
 test_haplotypes_files <- unlist(strsplit(opt$test_haplotypes_files,split = ",")) # comma-separated list of files containing chromosome ids and counts of test haplotypes joined to each included haplotype
 phenotypes_file <- opt$phenotypes_file # bca phenotypes with age and genotype pcs
-haplotype_number <- as.numeric(opt$haplotype_number) # column number (not including row names)of test haplotype in each file
+haplotype_number <- as.numeric(opt$haplotype_number) # column number (not including row names) of test haplotype in each file
 groups <- unlist(strsplit(opt$groups,split = ",")) # grouping of  haplotype variables as a comma-separated list with hyphens for ranges
 n <- as.numeric(opt$n_new_haplotypes) # number of new haplotypes being joined to model
 verbose <- as.logical(as.numeric(opt$verbose)) # whether to print model output
@@ -77,9 +79,6 @@ if (length(ll)-n>0) { # only if there are INCLUDED_HAPLOTYPES to which TEST_HAPL
   ranges_combined <- list()
 }
 
-# print(matrix(unlist(mapply(function(X,Y) lapply(pos,function(Z) (any(Z >= ll[X] & Z <= ul[X]) & any(Z >= ll[Y] & Z <= ul[Y]) ) | (any(Z >= ll[X] & Z <= ul[X]) & !(any(Z > ul[length(ll)-n]) ) ) ),1:(length(ll)-n),length(ll)-(n-1):0)),nrow=length(pos),byrow=FALSE) )
-# print(apply(matrix(unlist(mapply(function(X,Y) lapply(pos,function(Z) (any(Z >= ll[X] & Z <= ul[X]) & any(Z >= ll[Y] & Z <= ul[Y]) ) | (any(Z >= ll[X] & Z <= ul[X]) & !(any(Z > ul[length(ll)-n]) ) ) ),1:(length(ll)-n),length(ll)-(n-1):0),2,which),nrow=length(pos),byrow=FALSE),2,which) )
-
 if (sum(unlist(lapply(ranges,length))==0)==0) { # check that each variable category is represented
   if (verbose) {
     print(sprintf("DT[,h%d:=%s]",0,paste(vars[[which(unlist(lapply(pos,function(X) any(X < 0))))]],collapse="+")))
@@ -91,13 +90,11 @@ if (sum(unlist(lapply(ranges,length))==0)==0) { # check that each variable categ
       if (verbose) {
         a <- i/n # which included_haplotype group the ith test_haplotype is being joined to
         b <- n+i/n # new variable formed by joining test_haplotype to included_haplotype a
-        # print(sprintf("DT[,h%s:=%s]",paste(sort(unique(unlist(pos[ranges_combined[[i]]]))),collapse="."),paste(vars[ranges_combined[[i]]],collapse="+")))
-        print(sprintf("DT[,h%s:=%s]",paste(c(a,b),collapse="."),paste(vars[ranges_combined[[i]]],collapse="+")))
       }
       a <- i/n # which included_haplotype group the ith test_haplotype is being joined to
       b <- length(ll)-1+i/n # new variable formed by joining test_haplotype to included_haplotype a
       eval(parse(text = sprintf("DT[,h%s:=%s]",paste(c(a,b),collapse="."),paste(vars[ranges_combined[[i]]],collapse="+"))))
-      # str0 <- sprintf("%s%sh%s",str0,ifelse(nchar(str0)>0," + ",""),paste(sort(unique(unlist(pos[ranges_combined[[i]]]))),collapse="."))
+
       str0 <- sprintf("%s%sh%s",str0,ifelse(nchar(str0)>0," + ",""),paste(c(a,b),collapse="."))
     }
   }

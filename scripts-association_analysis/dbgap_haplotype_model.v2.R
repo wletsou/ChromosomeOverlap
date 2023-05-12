@@ -1,3 +1,5 @@
+# Logistic model for the effect of the newest test_haplotype in the model
+
 library(optparse)
 library(data.table)
 library(survival)

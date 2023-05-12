@@ -1,14 +1,14 @@
 #! /bin/bash
 set -e
 
-# sh /home/wletsou/scripts/ukbb_haplotype_model9_fit.sh allele_counts.txt included_haplotype_0.new_allele_counts.075-089.txt bca.BR.txt 1 "1" "" Conditional_haplotype_effects.txt
+# for evaluating the newest TEST_HAPLOTYPE in the Cox-proportional hazards model for BCa
 
 INCLUDED_HAPLOTYPES=$1 # counts of included_haplotypes for each chromosome (can be just a list of chromosomes if no included_haplotypes in model)
 TEST_HAPLOTYPES=$2 # counts of each new haplotype to be joined to each included_haplotype (comma-separated list of files)
-PHENOTYPES=$3 # phenotypes file for getting age and affected status
+PHENOTYPES=$3 # phenotypes file for getting age ("age.end"), principal components of ancestry ("pc1" to "pc10") and affected status ("diag") from each subject ("sid")
 JOIN=$4 # comma-separated list of which INCLUDED_HAPLOTYPES to join to (start with "1", correction will be done for 0-based indexing); use all if value is empty
 GROUPING=$5 # comma-separated list 1,2-4,5,6-8,... of how the INCLUDED_HAPLOTYPES should be grouped in the model; single-grouping if empty
-NAME=$6 # optional name appended to temporary files
+NAME=$6 # optional name to prepend to included_haplotypes files
 OUTPUT=$7 # optional name of output file
 DIRECTORY=$8
 HOME_DIR=$9
@@ -31,7 +31,7 @@ then
   unset NAME
 fi
 
-test -z $PHENOTYPES && (>&2 echo "Phenotypes file $PHENOTYPES not supplied"; exit 1)
+test -z $PHENOTYPES && (>&2 echo "Phenotypes file not supplied"; exit 1)
 test -f $PHENOTYPES || (>&2 echo "Phenotypes file $PHENOTYPES not found"; exit 1)
 
 test_haplotypes_files=($(echo $TEST_HAPLOTYPES | perl -pne 's/[,]/ /g'))
@@ -52,7 +52,6 @@ if [ ! -z $JOIN ]
 then
   JOIN=($(echo $JOIN | perl -pne 's/[,]/ /g')) # array of haplotypes to join test haplotype to
 else
-  # JOIN=($(eval "echo {1..$( (($n_included_haplotypes>0)) && echo $n_included_haplotypes || echo 1 )}")) # indicates joining of test haplotype to all included haplotypes (one test_haplotype file per included haplotype)
   JOIN=() # indicates joining to the empty haplotype
 fi
 max_haplotype=$(awk 'BEGIN{max=0; n=split("'$(echo ${GROUPING} | sed 's/[-]/,/g')'",array,","); for (i=1;i<=n;i++) {a=gensub("([0-9]*)-[0-9]*","\\1","g",array[i]); if (a>max) {max=a}; b=gensub("[0-9]*-([0-9]*)","\\1","g",array[i]); if (b>max) {max=b} }; print max}' ) # maximum variable name in GROUPING array
@@ -65,21 +64,6 @@ groups=$(echo "${GROUPING[*]}" | sed 's/\s\+/,/g')
 group_array=($(echo "${GROUPING[*]}"))
 max_new_haplotypes=$(awk 'BEGIN{n=split("'$(echo ${GROUPING[@]} | sed 's/\s\+/,/g')'",array,","); for (i=1;i<=n;i++) {GROUPING[array[i]]}; delete array; m=split("'$(echo ${JOIN[@]} | sed 's/\s\+/,/g')'",array,","); for (i=1;i<=m;i++) {JOIN[array[i]]}; if (m>0) {for (i in JOIN) {for (j in GROUPING) {a=gensub("([0-9]*)-[0-9]*","\\1","g",j); b=gensub("[0-9]*-([0-9]*)","\\1","g",j); if (i>=a && i<=b) {print j} } } } else {print 0} }' | awk '{seen[$0]+=1} END{print length(seen)}') # find the number of unique elements of GROUPING to which elements of JOIN belong; this is the maximum number of extra groups in the model
 n_new_haplotypes=$(awk 'BEGIN{if ('$max_new_haplotypes'-'$(echo $(((${#JOIN[@]}>0)) && echo ${#JOIN[@]} || echo 1))'>=0) {print '$max_new_haplotypes'-('$max_new_haplotypes'-'$(echo $(((${#JOIN[@]}>0)) && echo ${#JOIN[@]} || echo 1))')} else {print '$max_new_haplotypes'} }') # total number new haplotypes to add to model (by joining to haplotypes in JOIN)
-
-# if ((${#group_array[@]}==0))
-# then
-#   group_array=(0) # for defining the null group but not counting it
-# fi
-# declare -p group_array
-# printf "\n"
-
-# for ((i=1;i<=$n_new_haplotypes;i++)) # add one new group for each included_haplotype group to which the test_haplotype is joined
-# do
-#   groups=${groups}$( test ! -z $groups && echo "," || echo "")$(($n_included_haplotypes+i)) # https://stackoverflow.com/questions/36977855/get-last-element-in-bash-array
-#   group_array=($(echo $groups | perl -pne 's/[,]/ /g'))
-# done
-# declare -p group_array
-# printf "\n"
 
 ll=$((${#group_array[@]}+1)) # lower limit of joined haplotypes in list
 ul=$ll # initial upper limit
@@ -106,8 +90,6 @@ fi
 for ((i=0;i<$n_test_haplotypes;i++))
 do
   start=$(date +%s.%N)
-  # echo awk \'BEGIN{OFS=\"\\t\"} {print \$1,\$$((i+2))}\' $INCLUDED_HAPLOTYPES \> ${INCLUDED_HAPLOTYPES%.*}.${NAME/%/.}haplotype_$((i+1)).txt
-  # awk 'BEGIN{OFS="\t"} {print $1,$'$((i+2))'}' $INCLUDED_HAPLOTYPES > ${INCLUDED_HAPLOTYPES%.*}.${NAME/%/.}haplotype_$((i+1)).txt && printf "\n" # initialize haplotype count file
 
   for ((j=0;j<${#test_haplotypes_files[@]};j++))
   do

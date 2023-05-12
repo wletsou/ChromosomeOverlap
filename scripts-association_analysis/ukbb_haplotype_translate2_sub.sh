@@ -1,7 +1,9 @@
 #! /bin/bash
 set -e
 
-# bsub -P SJLIFE -J ukbb_haplotype_translate2_sub -oo ukbb_haplotype_translate2_sub.out -eo ukbb_haplotype_translate2_sub.err -R "rusage[mem=256]" -q standard "sh /home/wletsou/scripts/ukbb_haplotype_translate2_sub.sh haplotype_estimates.ukbb_bca_cases.chr11.68850000-69231641.subset.txt fisher_exact.ukbb_bca_cases.Results.txt 50"
+# wrapper script for translating meta-chromosomes from column numbers to SNP rsids
+
+# bsub -P SJLIFE -J ukbb_haplotype_translate2_sub -oo ukbb_haplotype_translate2_sub.out -eo ukbb_haplotype_translate2_sub.err -R "rusage[mem=256]" -q standard "sh ukbb_haplotype_translate2_sub.sh haplotype_estimates.ukbb_bca_cases.chr11.69231642-69431642.txt fisher_exact.Iteration001-005.chr11.69231642-69431642.patterns_000001-585850.Results.txt 50"
 
 POPULATION=$1 # haplotype_estimates file for population with subject id in first column and rsids in columns 2 and beyond
 HAPLOTYPES=$2 # colon-separated list of haplotypes, or a file with haplotypes in the first column.  Can be of the form column_allele,... or rsid_allele=[0/1]
@@ -11,7 +13,7 @@ HOME_DIR=$5 # location of scripts to be run
 
 if [ -z $HOME_DIR ];
 then
-  HOME_DIR=$(echo "/home/wletsou/scripts")
+  unset HOME_DIR
 fi
 
 if [ -z $DIRECTORY ];
@@ -20,7 +22,6 @@ then
 fi
 cd $DIRECTORY
 
-# MAX_JOBS=$(cat "/hpcf/lsf/lsf_prod/conf/lsbatch/hpcf_research_cluster/configdir/lsb.users" | grep "#wletsou" | awk '{print $2}')
 if [ -z $MAX_JOBS ]
 then
   MAX_JOBS=1500 # revised limit
@@ -44,8 +45,8 @@ do
 done
 printf "\n"
 
-echo bsub \-P SJLIFE \-J \"myJob[1-$n_jobs]\" \-oo ukbb_haplotype_translate2.%I.out \-eo ukbb_haplotype_translate2.%I.err \-R \"rusage[mem=2048]\" \-q standard \"${HOME_DIR}/ukbb_haplotype_translate2.sh ${POPULATION} $HAPLOTYPES $DELTA.\\\$LSB_JOBINDEX $DIRECTORY $HOME_DIR\"
-bsub -P SJLIFE -J "myJob[1-$n_jobs]" -oo ukbb_haplotype_translate2.%I.out -eo ukbb_haplotype_translate2.%I.err -R "rusage[mem=2048]" -q standard "${HOME_DIR}/ukbb_haplotype_translate2.sh ${POPULATION} $HAPLOTYPES $DELTA.\$LSB_JOBINDEX $DIRECTORY $HOME_DIR"
+echo bsub \-P SJLIFE \-J \"myJob[1-$n_jobs]\" \-oo ukbb_haplotype_translate2.%I.out \-eo ukbb_haplotype_translate2.%I.err \-R \"rusage[mem=2048]\" \-q standard \"${HOME_DIR/%/\/}ukbb_haplotype_translate2.sh ${POPULATION} $HAPLOTYPES $DELTA.\\\$LSB_JOBINDEX $DIRECTORY $HOME_DIR\"
+bsub -P SJLIFE -J "myJob[1-$n_jobs]" -oo ukbb_haplotype_translate2.%I.out -eo ukbb_haplotype_translate2.%I.err -R "rusage[mem=2048]" -q standard "${HOME_DIR/%/\/}ukbb_haplotype_translate2.sh ${POPULATION} $HAPLOTYPES $DELTA.\$LSB_JOBINDEX $DIRECTORY $HOME_DIR"
 printf "\n"
 
 job_array=($(bjobs 2> /dev/null | awk '($7 ~ /myJob/){print $7} ($6 ~ /myJob/){print $6}')) # get job name from 7th field (or 6th if no exectution host yet) in all non-header rows of bjobs

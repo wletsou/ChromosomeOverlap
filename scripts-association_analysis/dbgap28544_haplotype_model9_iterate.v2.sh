@@ -1,10 +1,12 @@
 #! /bin/bash
 set -e
 
-# bsub -P SJLIFE -J ukbb_haplotype_model9_iterate -oo ukbb_haplotype_model9_iterate.out -eo ukbb_haplotype_model9_iterate.err -R "rusage[mem=1000]" "sh /home/wletsou/scripts/ukbb_haplotype_model9_iterate.sh allele_counts.txt bca.BR.txt 1 1 0.01 Significant_patterns.txt /scratch_space/wletsou/sjlife/GWAS/UKBB_chr11.33/phase2 /home/wletsou/scripts"
+# wrapper script for doing forward-selection in DRIVE on each haplotype in counts files produced by ukbb_haplotype_model9_sub.v2.sh
+
+# bsub -P SJLIFE -J dbgap28544_haplotype_model9_iterate.v2.replication -oo dbgap28544_haplotype_model9_iterate.v2.replication.out -eo dbgap28544_haplotype_model9_iterate.v2.replication.err -R "rusage[mem=256]" "sh dbgap28544_haplotype_model9_iterate.v2.sh drive_replication.allele_counts.txt dbgap28544.pheno.txt \"\" \"\" 1e-5 drive_replication.Significant_patterns.txt \"drive_replication\""
 
 INCLUDED_HAPLOTYPES=$1 # counts of included_haplotypes for each chromosome (can be just a list of chromosomes if no included_haplotypes in model)
-PHENOTYPES=$2 # phenotypes file for getting age and affected status
+PHENOTYPES=$2 # phenotypes file for getting age ("ageonset"), principal components of ancestry ("pc1" to "pc10") and affected status ("BCa") from each subject ("sid")
 JOIN=$3 # comma-separated list of which INCLUDED_HAPLOTYPES to join to (start with "1", correction will be done for 0-based indexing); use all if value is empty
 GROUPING=$4 # comma-separated list 1,2-4,5,6-8,... of how the INCLUDED_HAPLOTYPES should be grouped in the model; single-grouping if empty
 CUTOFF=$5 # LRT p-value cutoff; stop when all p exceed
@@ -37,7 +39,6 @@ if [ ! -z $JOIN ]
 then
   JOIN=($(echo $JOIN | perl -pne 's/[,]/ /g')) # array of haplotypes to join test haplotype to
 else
-  # JOIN=($(eval "echo {1..$( (($n_included_haplotypes>0)) && echo $n_included_haplotypes || echo 1 )}")) # indicates joining of test haplotype to all included haplotypes (one test_haplotype file per included haplotype)
   JOIN=() # indicates joining to the empty haplotype
 fi
 max_haplotype=$(awk 'BEGIN{max=0; n=split("'$(echo ${GROUPING} | sed 's/[-]/,/g')'",array,","); for (i=1;i<=n;i++) {a=gensub("([0-9]*)-[0-9]*","\\1","g",array[i]); if (a>max) {max=a}; b=gensub("[0-9]*-([0-9]*)","\\1","g",array[i]); if (b>max) {max=b} }; print max}' ) # maximum variable name in GROUPING array
@@ -82,9 +83,6 @@ do
     N_JOBS=$((N_JOBS+1)) # file count
   done
   x=$( ((${#JOIN[@]}>0)) && echo $((${#JOIN[@]}-1)) || echo ${#JOIN[@]}) # total number of included haplotypes, starting with 0
-
-  # echo bsub \-P SJLIFE \-J \"myJob[1-$N_JOBS]\" \-oo dbgap28544_haplotype_model9_fit.v2.${NAME/%/.}round_${k}.%I.out \-eo dbgap28544_haplotype_model9_fit.v2.${NAME/%/.}round_${k}.%I.err \-R \"rusage[mem=1000]\" \-R \"order[!ut]\" \-R \"select[ut \< 0.9 \&\& r15m \* ncpus \* cpuf / 6 \< 20]\" \-q standard \"sh ${HOME_DIR/%/\/}dbgap28544_haplotype_model9_fit.v2.sh \\\"${INCLUDED_HAPLOTYPES%.*}.included_haplotypes.txt\\\" \\\"$(eval "echo ${NAME/%/.}included_haplotype_{0..${x}}.new_allele_counts.job\\\$LSB_JOBINDEX.txt | tr \" \" \",\"")\\\" \\\"$PHENOTYPES\\\" \\\"$3\\\" \\\"$4\\\" job\$LSB_JOBINDEX ${DIRECTORY/%/\/}${NAME/%/.}Conditional_haplotype_effects.$(eval "for i in {$((${#group_array[@]}+1))..$((${#group_array[@]}+$n_new_haplotypes))}; do printf \"%s,\" h\$i; done | sed 's/,\$//g'").txt $DIRECTORY $HOME_DIR\"
-  # bsub -P SJLIFE -J "myJob[1-$N_JOBS]" -oo dbgap28544_haplotype_model9_fit.v2.${NAME/%/.}round_${k}.%I.out -eo dbgap28544_haplotype_model9_fit.v2.${NAME/%/.}round_${k}.%I.err -R "rusage[mem=1000]" -R "order[!ut]" -R "select[ut < 0.9 && r15m * ncpus * cpuf / 6 < 20]" -q standard "sh ${HOME_DIR/%/\/}dbgap28544_haplotype_model9_fit.v2.sh \"${INCLUDED_HAPLOTYPES%.*}.included_haplotypes.txt\" \"$(eval "echo ${NAME/%/.}included_haplotype_{0..${x}}.new_allele_counts.job\\\$LSB_JOBINDEX.txt | tr \" \" \",\"")\" \"$PHENOTYPES\" \"$3\" \"$4\" job\$LSB_JOBINDEX ${DIRECTORY/%/\/}${NAME/%/.}Conditional_haplotype_effects.$(eval "for i in {$((${#group_array[@]}+1))..$((${#group_array[@]}+$n_new_haplotypes))}; do printf \"%s,\" h\$i; done | sed 's/,\$//g'").txt $DIRECTORY $HOME_DIR" && printf "\n"
 
   echo bsub \-P SJLIFE \-J \"myJob[1-$N_JOBS]\" \-oo dbgap28544_haplotype_model9_fit.v2.${NAME/%/.}round_${k}.%I.out \-eo dbgap28544_haplotype_model9_fit.v2.${NAME/%/.}round_${k}.%I.err \-R \"rusage[mem=4000]\" \-R \"order[!ut]\" \-R \"select[ut \< 0.9]\" \-q standard \"sh ${HOME_DIR/%/\/}dbgap28544_haplotype_model9_fit.v2.sh \\\"${INCLUDED_HAPLOTYPES%.*}.included_haplotypes.txt\\\" \\\"$(eval "echo ${NAME/%/.}included_haplotype_{0..${x}}.new_allele_counts.job\\\$LSB_JOBINDEX.txt | tr \" \" \",\"")\\\" \\\"$PHENOTYPES\\\" \\\"$3\\\" \\\"$4\\\" job\$LSB_JOBINDEX ${DIRECTORY/%/\/}${NAME/%/.}Conditional_haplotype_effects.$(eval "for i in {$((${#group_array[@]}+1))..$((${#group_array[@]}+$n_new_haplotypes))}; do printf \"%s,\" h\$i; done | sed 's/,\$//g'").txt $DIRECTORY $HOME_DIR\"
   bsub -P SJLIFE -J "myJob[1-$N_JOBS]" -oo dbgap28544_haplotype_model9_fit.v2.${NAME/%/.}round_${k}.%I.out -eo dbgap28544_haplotype_model9_fit.v2.${NAME/%/.}round_${k}.%I.err -R "rusage[mem=4000]" -R "order[!ut]" -R "select[ut < 0.9]" -q standard "sh ${HOME_DIR/%/\/}dbgap28544_haplotype_model9_fit.v2.sh \"${INCLUDED_HAPLOTYPES%.*}.included_haplotypes.txt\" \"$(eval "echo ${NAME/%/.}included_haplotype_{0..${x}}.new_allele_counts.job\\\$LSB_JOBINDEX.txt | tr \" \" \",\"")\" \"$PHENOTYPES\" \"$3\" \"$4\" job\$LSB_JOBINDEX ${DIRECTORY/%/\/}${NAME/%/.}Conditional_haplotype_effects.$(eval "for i in {$((${#group_array[@]}+1))..$((${#group_array[@]}+$n_new_haplotypes))}; do printf \"%s,\" h\$i; done | sed 's/,\$//g'").txt $DIRECTORY $HOME_DIR" && printf "\n"

@@ -1,7 +1,11 @@
 #! /bin/bash
 set -e
 
-PHENOTYPES=$1 # e.g. bca.BR.txt
+# wrapper script for counting number of copies of INCLUDED_HAPLOTYPE (h1) + TEST_HAPLOTYPE (= h2) for each TEST_HAPLOTYPE for each subject
+
+# bsub -P SJLIFE -J ukbb_haplotype_model9_sub.ukbb_discovery -oo ukbb_haplotype_model9_sub.v2.ukbb_discovery.out -eo ukbb_haplotype_model9_sub.v2.ukbb_discovery.err -R "rusage[mem=256]" "sh ukbb_haplotype_model9_sub.v2.sh ukb.bca.pheno.txt haplotype_estimates.ukbb_bca_cases+ukbb_bca_controls.chr11.69231642-69431642.txt fisher_exact.Iteration001-005.chr11.69231642-69431642.patterns_000001-585850.Results.translated.txt \"\" \"\" \"\" 11 69231642,69431642 50 \"ukbb_discovery\""
+
+PHENOTYPES=$1 # UKBB phenotypes file
 POPULATION=$2 # combined cases/controls haplotype_estimates file
 TEST_HAPLOTYPES=$3 # file with translated haplotypes in first column, or a colon-separated list of comma-separated lists rsid1_allele=[0,1] to be joined to INCLUDED_HAPLOTYPES
 JOIN=$4 # comma-separated list of which INCLUDED_HAPLOTYPES to join to (start with "1", correction will be done for 0-based indexing); use all if value is empty
@@ -10,7 +14,7 @@ GROUPING=$6 # comma-separated list 1,2-4,5,6-8,... of how the INCLUDED_HAPLOTYPE
 CHR=$7 # chromosome number
 BP_RANGE=$8 # from_bp,to_bp
 DELTA=$9 # number of combinations to do in one job
-NAME=${10}
+NAME=${10} # optional name to prepend to included_haplotypes files
 DIRECTORY=${11}
 HOME_DIR=${12}
 
@@ -147,8 +151,6 @@ printf "\n"
 
 for ((i=0;i<${#JOIN[@]};i++))
 do
-  # echo bsub \-P SJLIFE \-J \"myJob[1-$n_jobs]\" \-oo ukbb_haplotype_model9.v2.${NAME/%/.}%I.out \-eo ukbb_haplotype_model9.v2.${NAME/%/.}%I.err \-R \"rusage[mem=1000]\" \-R \"order[!ut]\" \-R \"select[ut \< 0.9 \&\& r15m \* ncpus \* cpuf / 6 \< 20]\" \-q standard \"${HOME_DIR/%/\/}ukbb_haplotype_model9.v2.sh ${POPULATION} $TEST_HAPLOTYPES \\\"${INCLUDED_HAPLOTYPES[${JOIN[i]}]}\\\" $DELTA.\\\$LSB_JOBINDEX \\\"$( ((${#JOIN[@]}>0)) && echo "${NAME/%/.}included_haplotype_${JOIN[i]}" || echo "")\\\" $DIRECTORY $HOME_DIR\"
-  # bsub -P SJLIFE -J "myJob[1-$n_jobs]" -oo ukbb_haplotype_model9.v2.${NAME/%/.}%I.out -eo ukbb_haplotype_model9.v2.${NAME/%/.}%I.err -R "rusage[mem=1000]" -R "order[!ut]" -R "select[ut < 0.9 && r15m * ncpus * cpuf / 6 < 20]" -q standard "${HOME_DIR/%/\/}ukbb_haplotype_model9.v2.sh ${POPULATION} $TEST_HAPLOTYPES \"${INCLUDED_HAPLOTYPES[${JOIN[i]}]}\" $DELTA.\$LSB_JOBINDEX \"$( ((${#JOIN[@]}>0)) && echo "${NAME/%/.}included_haplotype_${JOIN[i]}" || echo "")\" $DIRECTORY $HOME_DIR"
 
   echo bsub \-P SJLIFE \-J \"myJob[1-$n_jobs]\" \-oo ukbb_haplotype_model9.v2.${NAME/%/.}%I.out \-eo ukbb_haplotype_model9.v2.${NAME/%/.}%I.err \-R \"rusage[mem=1000]\" \-R \"order[!ut]\" \-R \"select[ut \< 0.9]\" \-q standard \"${HOME_DIR/%/\/}ukbb_haplotype_model9.v2.sh ${POPULATION} $TEST_HAPLOTYPES \\\"${INCLUDED_HAPLOTYPES[${JOIN[i]}]}\\\" $DELTA.\\\$LSB_JOBINDEX \\\"$( ((${#JOIN[@]}>0)) && echo "${NAME/%/.}included_haplotype_${JOIN[i]}" || echo "")\\\" $DIRECTORY $HOME_DIR\"
   bsub -P SJLIFE -J "myJob[1-$n_jobs]" -oo ukbb_haplotype_model9.v2.${NAME/%/.}%I.out -eo ukbb_haplotype_model9.v2.${NAME/%/.}%I.err -R "rusage[mem=1000]" -R "order[!ut]" -R "select[ut < 0.9]" -q standard "${HOME_DIR/%/\/}ukbb_haplotype_model9.v2.sh ${POPULATION} $TEST_HAPLOTYPES \"${INCLUDED_HAPLOTYPES[${JOIN[i]}]}\" $DELTA.\$LSB_JOBINDEX \"$( ((${#JOIN[@]}>0)) && echo "${NAME/%/.}included_haplotype_${JOIN[i]}" || echo "")\" $DIRECTORY $HOME_DIR"

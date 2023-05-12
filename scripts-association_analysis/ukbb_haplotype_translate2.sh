@@ -1,6 +1,8 @@
 #! /bin/bash
 set -e
 
+# wrapper script for translating meta-chromosomes from column numbers to SNP rsids
+
 POPULATION=$1 # haplotype_estimates file for population with subject id in first column and rsids in columns 2 and beyond
 HAPLOTYPES=$2 # colon-separated list of haplotypes, or a file with haplotypes in the first column.  Can be of the form column_allele,... or rsid_allele=[0/1]
 RANGE=$3 # Range (ll,ul) of haplotypes to do, from 0 to n_haplotypes - 1.  OR a period-separated list "STEP_SIZE.STEP_NO" defining the range "(i-1) * step,i * step - 1"
@@ -9,7 +11,7 @@ HOME_DIR=$5 # location of scripts to be run
 
 if [ -z $HOME_DIR ];
 then
-  HOME_DIR=$(echo "/home/wletsou/scripts")
+  unset HOME_DIR
 fi
 
 if [ -z $DIRECTORY ];

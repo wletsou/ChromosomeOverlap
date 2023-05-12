@@ -1,6 +1,8 @@
 #! /bin/bash
 set -e
 
+# For counting number of copies of INCLUDED_HAPLOTYPE (h1) + TEST_HAPLOTYPE (= h2) for each TEST_HAPLOTYPE (in supplied RANGE) for each subject
+
 POPULATION=$1 # combined cases/controls haplotype_estimates file
 TEST_HAPLOTYPES=$2 # file with translated haplotypes in first column, or a colon-separated list of comma-separated lists rsid1_allele=[0,1] to be joined to INCLUDED_HAPLOTYPES
 INCLUDED_HAPLOTYPE=$3 # one haplotype to be joined to each TEST_HAPLOTYPE, comma-separated list of rsid1_allele=[0,1]
@@ -11,7 +13,7 @@ HOME_DIR=$7
 
 if [ -z $HOME_DIR ];
 then
-  HOME_DIR=$(echo "/home/wletsou/scripts")
+  unset HOME_DIR
 fi
 
 if [ -z $DIRECTORY ];
