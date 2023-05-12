@@ -6,7 +6,7 @@
 * Use <kbd>ukbb_haplotype_model9_count_fit.v2.sh</kbd> and <kbd>drive28544_haplotype_model9_count_fit.v2.sh</kbd> to perform the couting and fitting for a few haplotypes in one step
 * Use <kbd>ukbb_backward_selection.R</kbd> to get the p-values for the haplotypes by removing each haplotype one-at-a-time from the joint model
 * Find the linkage-disequilibrium between any two haplotypes in a population using <kbd>ukbb_haplotype_haplotype_LD2.sh</kbd>
-* Convert haplotypes of the form rsid1_A=0,... to UCSC bed format for plotting
+* Convert haplotypes of the form rsid1_A=0,... to UCSC bed format for plotting using <kbd>vcf2bed.v3.sh</kbd>
 
 The phenotype file for UKBB must include columns for subject id ("sid"), breast cancer status ("diag") age at diagnosis or censoring ("age.end"), and ten principal components of ancestry ("pc1" to "pc10").&nbsp; The phenotype file for DRIVE must include columns for subject id ("sid"), breast cancer status ("BCa") age at diagnosis or censoring ("ageonset"), and ten principal components of ancestry ("pc1" to "pc10").
 
