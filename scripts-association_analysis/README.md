@@ -1,5 +1,6 @@
 # Association analysis #
 
+* Use <kbd>haplotype_rpart.sh</kbd> to reduce common haplotypes using recursive partitioning
 * Use <kbd>ukbb_haplotype_translate2_sub.sh</kbd> to translate closed patterns from lists of column numbers (of haplotype_estimates file) to rsids
 * Use <kbd>ukbb_haplotype_model9_sub.v2.sh</kbd> and <kbd>drive28544_haplotype_model9_sub.v2.sh</kbd> to get the counts of each haplotype (0, 1, or 2) for each subject in UKBB and DRIVE, respectively
 * Use <kbd>ukbb_haplotype_model9_iterate.v2.sh</kbd> and <kbd>drive28544_haplotype_model9_iterate.v2.sh</kbd> to perform forward-selection on the list of test haplotypes in UKBB and DRIVE, respectively
