@@ -1,11 +1,11 @@
 # Association analysis #
 
-* Use <kbd>haplotype_rpart.sh</kbd> to reduce common haplotypes using recursive partitioning
 * Use <kbd>ukbb_haplotype_translate2_sub.sh</kbd> to translate closed patterns from lists of column numbers (of haplotype_estimates file) to rsids
 * Use <kbd>ukbb_haplotype_model9_sub.v2.sh</kbd> and <kbd>drive28544_haplotype_model9_sub.v2.sh</kbd> to get the counts of each haplotype (0, 1, or 2) for each subject in UKBB and DRIVE, respectively
 * Use <kbd>ukbb_haplotype_model9_iterate.v2.sh</kbd> and <kbd>drive28544_haplotype_model9_iterate.v2.sh</kbd> to perform forward-selection on the list of test haplotypes in UKBB and DRIVE, respectively
 * Use <kbd>ukbb_haplotype_model9_count_fit.v2.sh</kbd> and <kbd>drive28544_haplotype_model9_count_fit.v2.sh</kbd> to perform the couting and fitting for a few haplotypes in one step
 * Use <kbd>ukbb_backward_selection.R</kbd> to get the p-values for the haplotypes by removing each haplotype one-at-a-time from the joint model
+* Use <kbd>haplotype_rpart.sh</kbd> to reduce common haplotypes using recursive partitioning
 * Find the linkage-disequilibrium between any two haplotypes in a population using <kbd>ukbb_haplotype_haplotype_LD2.sh</kbd>
 * Convert haplotypes of the form rsid1_A=0,... to UCSC bed format for plotting using <kbd>vcf2bed.v3.sh</kbd>
 
